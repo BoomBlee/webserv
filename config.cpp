@@ -16,7 +16,7 @@ struct server
 {
 	std::string server_name;
 	std::vector<location> locations;
-	bool bracket = CLOSE_BRACKET;
+	bool bracket;
 };
 
 void trim(std::string& src)
@@ -31,13 +31,21 @@ void write_param(std::string& str) {
 
 location parse_location(std::ifstream& file, std::string& str) {
 	location loc;
+	size_t pos;
+
+	if ((pos = str.find(" ")) != std::string::npos) {
+		loc.path.insert(0, str, pos);
+		str.substr(pos);
+		trim(str);
+	}
+
 
 	return loc;
 }
 
 server parse_server(std::ifstream& file, std::string& str) {
 	server serv;
-	str = str.substr(6, str.length() - 6);
+	str = str.substr(6);
 	trim(str);
 	if (str.find("{") != std::string::npos) {
 		serv.bracket = OPEN_BRACKET;
@@ -53,8 +61,9 @@ server parse_server(std::ifstream& file, std::string& str) {
 	}
 	while (serv.bracket == OPEN_BRACKET) {
 		getline (file,str);
-		if (str.find("location", 0, 8)) {
-			str = str.substr(8, str.length() - 8);
+		trim(str);
+		if (str.find("location", 0, 8) != std::string::npos) {
+			str = str.substr(8);
 			trim(str);
 			serv.locations.push_back(parse_location(file, str));
 		}
@@ -87,4 +96,6 @@ int main() {
 		}
 		file.close();
 	}
+	std::cout << config.size() << std::endl;
+	return 0;
 }
