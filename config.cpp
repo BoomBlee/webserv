@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <map>
 
 #define CLOSE_BRACKET 0
 #define OPEN_BRACKET 1
@@ -9,6 +10,8 @@
 struct location
 {
 	std::string path;
+	bool bracket;
+	std::map<std::string, std::string> params;
 };
 
 
@@ -16,6 +19,7 @@ struct server
 {
 	std::string server_name;
 	std::vector<location> locations;
+	std::map<std::string, std::string> params;
 	bool bracket;
 };
 
@@ -25,8 +29,9 @@ void trim(std::string& src)
     src.erase(src.begin(), std::find_if_not(src.begin(), src.end(), ::isspace));
 }
 
-void write_param(std::string& str) {
-
+template<typename T>
+void write_param(std::string& str, T conf) {
+	std::cout << str << std::endl;
 }
 
 location parse_location(std::ifstream& file, std::string& str) {
@@ -34,12 +39,44 @@ location parse_location(std::ifstream& file, std::string& str) {
 	size_t pos;
 
 	if ((pos = str.find(" ")) != std::string::npos) {
-		loc.path.insert(0, str, pos);
-		str.substr(pos);
+		loc.path.insert(0, str, 0, pos);
+		str = str.substr(pos);
 		trim(str);
+		if (str.find("{") != std::string::npos) {
+			loc.bracket = OPEN_BRACKET;
+		}
+		else {
+			getline (file,str);
+			trim(str);
+			if (str.find("{", 0) != std::string::npos) {
+				loc.bracket = OPEN_BRACKET;
+			}
+			else {
+				throw std::logic_error("error config");
+			}
+		}
 	}
-
-
+	else {
+		loc.path.insert(0, str);
+		getline (file,str);
+		trim(str);
+		if (str.find("{", 0) != std::string::npos) {
+			loc.bracket = OPEN_BRACKET;
+		}
+		else {
+			throw std::logic_error("error config");
+		}
+	}
+	while (loc.bracket == OPEN_BRACKET) {
+		getline (file,str);
+		trim(str);
+		if (str.find("}") != std::string::npos) {
+			loc.bracket = CLOSE_BRACKET;
+		}
+		else {
+			write_param(str, loc);
+		}
+	}
 	return loc;
 }
 
@@ -49,14 +86,15 @@ server parse_server(std::ifstream& file, std::string& str) {
 	trim(str);
 	if (str.find("{") != std::string::npos) {
 		serv.bracket = OPEN_BRACKET;
-		std::cout << "if" << "\"" << str << "\"" << std::endl;
 	}
 	else {
 		getline (file,str);
-		std::cout << "else" << "\"" << str << "\"" << std::endl;
 		trim(str);
 		if (str.find("{", 0) != std::string::npos) {
 			serv.bracket = OPEN_BRACKET;
+		}
+		else {
+			throw ;
 		}
 	}
 	while (serv.bracket == OPEN_BRACKET) {
@@ -71,7 +109,7 @@ server parse_server(std::ifstream& file, std::string& str) {
 			serv.bracket = CLOSE_BRACKET;
 		}
 		else {
-			write_param(str);
+			write_param(str, serv);
 		}
 	}
 	return serv;
@@ -89,13 +127,18 @@ int main() {
 			getline (file,str);
 			trim(str);
 			if (str.find("server", 0, 6) != std::string::npos && (!str[6] || isspace(str[6]))) {
-				config.push_back(parse_server(file, str));
+				try {
+					config.push_back(parse_server(file, str));
+				}
+				catch(const std::exception& e) {
+					std::cerr << e.what() << std::endl;
+				}
 			}
 			// std::cout << str << std::endl;
 			
 		}
 		file.close();
 	}
-	std::cout << config.size() << std::endl;
+	// std::cout << config.size() << std::endl;
 	return 0;
 }
