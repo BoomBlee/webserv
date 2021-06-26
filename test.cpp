@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <asm-generic/socket.h>
+// #include <asm-generic/socket.h>
 #include <exception>
 #include <iostream>
 #include <netinet/in.h>
@@ -123,7 +123,7 @@ private:
 	std::string															path;
 	std::string															query;
 	std::string															version;
-	std::map<std::string, std::list<std::pair<std::string, double>>>	headers;//1 параметр мапы название хедера, 2 параметр мапы его значения и их вес
+	std::map<std::string, std::list<std::pair<std::string, double> > >	headers;//1 параметр мапы название хедера, 2 параметр мапы его значения и их вес
 	std::string															body;
 	int																	code;//код ошибки или успеха
 	std::map<std::string, std::string>									cgiEnv;

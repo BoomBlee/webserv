@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <asm-generic/socket.h>
+// #include <asm-generic/socket.h>
 #include <cctype>
 #include <cstddef>
 #include <cstdlib>
@@ -24,8 +24,10 @@
 #include <list>
 #include <utility>
 #include <vector>
-#include <stack>
+#include <stack> 
 
+
+class	ConfigServer{};
 
 //================================================================================================================================================
 //================================================================================================================================================
@@ -67,7 +69,7 @@ public:
 private:
 	std::vector<std::string>							methods;
 	std::string											version;
-	std::map<std::string, std::vector<std::string>>		headers;
+	std::map<std::string, std::vector<std::string> >		headers;
 };
 
 
@@ -102,13 +104,13 @@ public:
 	void	setBody(std::string &);
 	void	chunkedBody(std::string &);
 	std::string	getMethod(std::string &);
-	std::list<std::pair<std::string, double>>	getValue(std::string &);
+	std::list<std::pair<std::string, double> >	getValue(std::string &);
 
 	std::string	getMethod();
 	std::string	getPath();
 	std::string	getQuery();
 	std::string	getVersion();
-	std::map<std::string, std::list<std::pair<std::string, double>>>	getHeaders();
+	std::map<std::string, std::list<std::pair<std::string, double> > >	getHeaders();
 	std::string	getBody();
 	std::string	getStatus();
 	int			getStatusCode();
@@ -124,12 +126,13 @@ private:
 	std::string															path;
 	std::string															query;
 	std::string															version;
-	std::map<std::string, std::list<std::pair<std::string, double>>>	headers;//1 параметр мапы название хедера, 2 параметр мапы его значения и их вес
+	std::map<std::string, std::list<std::pair<std::string, double> > >	headers;//1 параметр мапы название хедера, 2 параметр мапы его значения и их вес
 	std::string															body;
 	int																	code;//код ошибки или успеха
 	std::string															status;
 	// std::map<std::string, std::string>									cgiEnv;
 	ConstatsParametrs													*params;
+	ConfigServer														conf;
 }; // класс обрабатывающий запросы клиента
 
 Request::Request(ConstatsParametrs &params) : params(&params) {}
@@ -166,6 +169,15 @@ void	Request::parse(std::string &reading) {
 		this->status = std::string(e.what());
 	}
 	// this->setCGIEnv();
+	std::cout << this->method << std::endl;
+	std::cout << this->path << std::endl;
+	std::cout << this->query << std::endl;
+	std::cout << this->version << std::endl;
+	// std::cout << this->headers.begin()->first << std::endl;
+	// std::cout << this->headers.begin()->second.begin()->first << std::endl;
+	std::cout << this->body << std::endl;
+	std::cout << this->status << std::endl;
+	std::cout << this->code << std::endl;
 }
 
 std::string	Request::getNewLine(std::string &str) {
@@ -261,8 +273,8 @@ std::string Request::getMethod(std::string &str) {
 	return methodName;
 }
 
-std::list<std::pair<std::string, double>>	Request::getValue(std::string &str) {
-	std::list<std::pair<std::string, double>>	value;
+std::list<std::pair<std::string, double> >	Request::getValue(std::string &str) {
+	std::list<std::pair<std::string, double> >	value;
 	int											i = 0;
 
 	for (size_t pos = str.find_first_of(','); i == 0; pos = str.find_first_of(',')) {
@@ -285,7 +297,7 @@ std::list<std::pair<std::string, double>>	Request::getValue(std::string &str) {
 }
 
 void	Request::setBody(std::string &str) {
-	std::map<std::string, std::list<std::pair<std::string, double>>>::iterator	it = this->headers.find("Transfer-Encoding");
+	std::map<std::string, std::list<std::pair<std::string, double> > >::iterator	it = this->headers.find("Transfer-Encoding");
 	if (it != this->headers.end() && it->second.begin()->first == "chunked")
 		this->chunkedBody(str);
 	else {
@@ -324,7 +336,7 @@ std::string	Request::getVersion() {
 	return this->version;
 }
 
-std::map<std::string, std::list<std::pair<std::string, double>>>	Request::getHeaders() {
+std::map<std::string, std::list<std::pair<std::string, double> > >	Request::getHeaders() {
 	return this->headers;
 }
 
