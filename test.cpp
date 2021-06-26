@@ -24,13 +24,24 @@
 #define TCP_SIZE 65536//максимальный размер пакета в TCP
 
 /*================================================================================
+TOOLS
+================================================================================*/
+
+size_t	skipspace(std::string &str) {
+	std::string::iterator it = str.begin();
+	for (; *it == ' '; it++) {}
+	std::string		str1(it, str.end());
+	return it - str.begin();
+}
+
+/*================================================================================
 ERRORS
 ================================================================================*/
 
-class	BaseError : public std::exception {
+class	BaseException : public std::exception {
 public:
-	BaseError(std::string &message, int &error);
-	virtual ~BaseError() throw ();
+	BaseException(std::string &message, int &error);
+	virtual ~BaseException() throw ();
 	virtual	const char *what() const throw ();
 	const int			&getErrorNumber() const throw ();
 private:
@@ -38,15 +49,15 @@ private:
 	std::string	message;
 }; // базовый класс ошибок
 
-BaseError::BaseError(std::string &message, int &error) : std::exception(), numError(error), message(message) {}
+BaseException::BaseException(std::string &message, int &error) : std::exception(), numError(error), message(message) {}
 
-BaseError::~BaseError() throw () {}
+BaseException::~BaseException() throw () {}
 
-const char	*BaseError::what() const throw() {
+const char	*BaseException::what() const throw() {
 	return this->message.c_str();
 }
 
-const int	&BaseError::getErrorNumber() const throw() {
+const int	&BaseException::getErrorNumber() const throw() {
 	return this->numError;
 }
 
@@ -58,8 +69,17 @@ CONFIG
 
 class	ConfigServer {
 public:
-	ConfigServer() {this->host = 2130706440; this->port = 9090;};
-	~ConfigServer() {};
+	ConfigServer() {
+		// this->host = 2130706440;
+		this->host = 0;
+		this->host = 127 << 8;
+		this->host = (this->host + 0) << 8;
+		this->host = (this->host + 0) << 8;
+		this->host += 15;
+		// std::cout << this->host << std::endl;
+		this->port = 9090;
+	}
+	~ConfigServer() {}
 	int		getHost();
 	int		getPort();
 private:
@@ -94,17 +114,42 @@ REQUEST
 class	Request {
 public:
 	Request();
+	Request(Request &);
+	Request	&operator=(Request &);
 	~Request();
 	void	parse(std::string &);
 private:
 	std::string															method;
 	std::string															path;
+	std::string															query;
 	std::string															version;
-	std::map<std::string, std::list<std::pair<std::string, double>>>	headers;//1 параметр мапы название хедера, 1 параметр мапы его значения и их вес
-	std::map<std::string, std::string>									cgiEnv;
+	std::map<std::string, std::list<std::pair<std::string, double>>>	headers;//1 параметр мапы название хедера, 2 параметр мапы его значения и их вес
 	std::string															body;
 	int																	code;//код ошибки или успеха
+	std::map<std::string, std::string>									cgiEnv;
 }; // класс обрабатывающий запросы клиента
+
+Request::Request() {}
+
+Request::Request(Request &copy) {
+	*this = copy;
+}
+
+Request::~Request() {}
+
+Request	&Request::operator=(Request &copy) {
+	this->method = copy.method;
+	this->path = copy.path;
+	this->version = copy.version;
+	this->headers = copy.headers;
+	this->cgiEnv = copy.cgiEnv;
+	this->body = copy.body;
+	this->query = copy.query;
+	this->code = copy.code;
+	return *this;
+}
+
+void	Request::parse(std::string &reading) {}
 
 /*================================================================================
 RESPONSE
@@ -131,12 +176,13 @@ public:
 	// struct	sockaddr_in		getSockaddr();
 	long		accept();
 	void		recv();
+	int			chunked_detect(size_t &, std::string &);
 	// void		send();
-	class	ServerError : public BaseError {
+	class	ServerException : public BaseException {
 	public:
-		ServerError(std::string, int);
-		ServerError(std::string, int, long &);
-		virtual ~ServerError() throw ();
+		ServerException(std::string, int);
+		ServerException(std::string, int, long &);
+		virtual ~ServerException() throw ();
 	};
 private:
 	struct	sockaddr_in		addr;
@@ -156,29 +202,57 @@ Server::Server(ConfigServer &serv) {
 	addr.sin_port = htons(this->config->getPort());
 	this->listen_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->listen_socket == -1)
-		throw Server::ServerError("socket", 1);
+		throw Server::ServerException("socket", 1);
 	if (bind(this->listen_socket, reinterpret_cast<struct sockaddr *>(&this->addr), sizeof(this->addr)) == -1)
-		throw Server::ServerError("bind", 2, this->listen_socket);
+		throw Server::ServerException("bind", 2, this->listen_socket);
 	if (listen(this->listen_socket, 1000) == -1)
-		throw Server::ServerError("listen", 3, this->listen_socket);
+		throw Server::ServerException("listen", 3, this->listen_socket);
 }
 
 long	Server::accept() {
 	socklen_t	size = static_cast<socklen_t>(sizeof(this->addr));
 	this->accept_socket = ::accept(this->listen_socket, reinterpret_cast<struct sockaddr *>(&this->addr), &size);
 	if (this->accept_socket == -1)
-		throw Server::ServerError("accept", 4, this->listen_socket);
+		throw Server::ServerException("accept", 4, this->listen_socket);
 	fcntl(this->accept_socket, F_SETFL, O_NONBLOCK);
 	return this->accept_socket;
 }
 
 void	Server::recv() {
 	char	buf[TCP_SIZE];
+	memset(buf, '\0', TCP_SIZE);
 	int		size = ::recv(this->accept_socket, buf, TCP_SIZE - 1, 0);
-	std::string		str(buf);
-	this->reading += str;
-	if (this->reading.find("Content-Length: ") == std::string::npos) {
+	if (size == 0)
+		throw Server::ServerException("Connection was closed by client.", 0);
+	if (size == -1)
+		throw Server::ServerException("Read error, closing connection.", 0);
+	this->reading += std::string(buf);
+	std::cout << buf << std::endl;
+	size_t	len = this->reading.find("\r\n\r\n");
+	if (len != std::string::npos) {
+		std::cout << len << std::endl;
+		if (this->reading.find("Content-Length:") == std::string::npos) {
+			size_t	pos = this->reading.find("Transfer-Encoding:");
+			if (pos != std::string::npos && chunked_detect(pos, this->reading)) {
+				if (this->reading.find("0\r\n\r\n") + 5 == this->reading.size())
+					throw Server::ServerException("Finish chunk", 1);
+			}
+		}
+		else if (this->reading.size() >= len + 4 + std::atoi(this->reading.substr(this->reading.find("Content-Length:") + 15, 10).c_str()))
+			throw Server::ServerException("Full body", 1);
 	}
+}
+
+int		Server::chunked_detect(size_t &pos, std::string &reading) {
+	pos += 18;
+	std::string str = reading.substr(pos);
+	pos = skipspace(str);
+	str = str.substr(pos, 7);
+	std::cout << "|" << str << "|" <<  std::endl;
+	if (str == "chunked") {
+		return 1;
+	}
+	return 0;
 }
 
 // long	Server::getAcceptSock() {
@@ -205,13 +279,13 @@ Server	&Server::operator=(const Server &copy) {
 	return *this;
 }
 
-Server::ServerError::ServerError(std::string mes, int err) : BaseError(mes, err) {}
+Server::ServerException::ServerException(std::string mes, int err) : BaseException(mes, err) {}
 
-Server::ServerError::ServerError(std::string mes, int err, long &sock) : BaseError(mes, err) {
+Server::ServerException::ServerException(std::string mes, int err, long &sock) : BaseException(mes, err) {
 	close(sock);
 }
 
-Server::ServerError::~ServerError() throw () {}
+Server::ServerException::~ServerException() throw () {}
 
 /*================================================================================
 WEBSERV
@@ -262,8 +336,8 @@ class	CGI {}; // класс отвечающий за CGI
 */
 
 int		main() {
-	struct pollfd fds[2];
-	char	*buff;
+	struct pollfd fds[1];
+	char	buff[1000];
 
 
 	try {
@@ -275,21 +349,26 @@ int		main() {
 		// fds[1].fd = fd;
 		// fds[1].events = POLLOUT;
 		std::cout << fds[0].events << std::endl;
+		int		u = 0;
 		while (1) {
 			int ret = poll(fds, 1, 10000);
 			if (ret > 0)
 			{
 				if (fds[0].revents == POLLIN) {
 					fds[0].revents = 0;
-					int retur = recv(fds[0].fd, buff, 65536, 0);
-					std::cout << buff << std::endl;
+					std::cout << "2" << std::endl;
+					int retur = recv(fds[0].fd, buff, TCP_SIZE, 0);
+					std::cout << std::string(buff) << std::endl;
 					std::cout << "recv: " << retur << std::endl;
 					fds[0].events = POLLOUT;
 				}
-				if (fds[0].revents == POLLOUT) {
+				else if (fds[0].revents == POLLOUT) {
+					u = 1;
 					fds[0].revents = 0;
+					// std::cerr << "3" << std::endl;
 					int retur = send(fds[0].fd, "HTTP/1.1 200 OK\n\rContent-Length: 30\n\rContent-Location: /index.html\n\rContent-Type: text/html\n\rDate: Wed, 16 Jun 2021 18:47:31 GMT\n\rLast-Modified: Sat, 22 May 2021 11:12:27 GMT\n\rServer: Weebserv/1.0.0 (Unix)\n\rTransfer-Encoding: identity\n\r\n\rThis is the default index yo!\n\r", 269, 0);
 					std::cout << "send: " << retur << std::endl;
+					return 0;
 				}
 			}
 			else if (ret == 0) {
@@ -311,7 +390,7 @@ int		main() {
 		// 	std::cout << retur << std::endl;
 		// }
 	}
-	catch (BaseError &e) {
+	catch (BaseException &e) {
 		std::cerr << e.what() << " ; " << e.getErrorNumber() << std::endl;
 	}
 	return 0;
