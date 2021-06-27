@@ -15,6 +15,9 @@ RESPONSE
 void	Response::initialization(Request &req) {
 	this->req = req;
 	this->setCGIEnv();
+	this->setHeaders();
+	if (this->req.getMethod() == "GET")
+		this->executeGET();
 }
 
 void	Response::setCGIEnv() {
@@ -45,7 +48,57 @@ void	Response::setCGIEnv() {
 }
 
 
+void	Response::setHeaders() {
+	this->headers.clear();
+	this->headers["Connection"] = this->connectionAccept() ? "keep-alive" : "close";
+	this->headers["Date"] = this->getDate();
+	this->headers["Location"] = "None"; // full PATH
+	this->headers["Server"] = "WebServ/1.1";
+}
 
+std::string	Response::getDate() {
+	time_t	now = time(0);
+
+	std::string	date = std::string(ctime(&now));
+	return date;
+}
+
+int		Response::connectionAccept() {
+	if (this->req.getStatusCode() > 200)
+		return 0;
+	return 1;
+}
+
+void	Response::executeGET() {
+	this->headers["Content-Type"];
+	this->headers["Content-Length"];
+
+}
+
+void	Response::executePOST() {
+	
+}
+
+void	Response::executePUT() {
+	
+}
+
+
+// void	Response::setHeaders() {
+// 	this->headers.clear();
+// 	this->headers["Accept-Ranges"] = "None";
+// 	this->headers["Content-Encoding"] = "None";
+// 	this->headers["Content-Language"];
+// 	this->headers["Authorization"] = "None";
+// 	this->headers["Expect"] = "None";
+// 	this->headers["From"] = "None";
+// 	this->headers["Host"] = "None"; //config (host + port)
+// 	this->headers["Expect"] = "None";
+// 	this->headers["Expect"] = "None";
+// 	this->headers["Expect"] = "None";
+// 	this->headers["Expect"] = "None";
+// 	this->headers["Expect"] = "None";
+// }
 
 
 
