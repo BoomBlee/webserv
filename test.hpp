@@ -80,14 +80,14 @@ public:
 	std::string	getMethod(std::string &);
 	std::list<std::pair<std::string, double> >	getValue(std::string &);
 
-	std::string	getMethod();
-	std::string	getPath();
-	std::string	getQuery();
-	std::string	getVersion();
-	std::map<std::string, std::list<std::pair<std::string, double> > >	getHeaders();
-	std::string	getBody();
-	std::string	getStatus();
-	int			getStatusCode();
+	std::string	&getMethod();
+	std::string	&getPath();
+	std::string	&getQuery();
+	std::string	&getVersion();
+	std::map<std::string, std::list<std::pair<std::string, double> > >	&getHeaders();
+	std::string	&getBody();
+	std::string	&getStatus();
+	int			&getStatusCode();
 	// std::map<std::string, std::string>	getCGIEnv();
 
 	class	RequestError : public BaseError {

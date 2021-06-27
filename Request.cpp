@@ -169,10 +169,12 @@ void	Request::setVersion(std::string &str) {
 }
 
 void	Request::setHeaders(std::string &str) {
-	for (std::string str1 = this->getNewLine(str); str1 != ""; str1 = this->getNewLine(str)) {
+	std::string str1;
+	for (str1 = this->getNewLine(str); str1 != ""; str1 = this->getNewLine(str)) {
 		std::string	methodName = this->getMethod(str1);
 		std::list<std::pair<std::string, double> >	value = this->getValue(str1);
 		this->headers[methodName] = value;
+		// this->headers.insert(std::make_pair(methodName, value));
 	}
 }
 
@@ -230,35 +232,35 @@ void	Request::chunkedBody(std::string &str) {
 	}
 }
 
-std::string	Request::getMethod() {
+std::string	&Request::getMethod() {
 	return this->method;
 }
 
-std::string	Request::getPath() {
+std::string	&Request::getPath() {
 	return this->path;
 }
 
-std::string	Request::getQuery() {
+std::string	&Request::getQuery() {
 	return this->query;
 }
 
-std::string	Request::getVersion() {
+std::string	&Request::getVersion() {
 	return this->version;
 }
 
-std::map<std::string, std::list<std::pair<std::string, double> > >	Request::getHeaders() {
+std::map<std::string, std::list<std::pair<std::string, double> > >	&Request::getHeaders() {
 	return this->headers;
 }
 
-std::string	Request::getBody() {
+std::string	&Request::getBody() {
 	return this->body;
 }
 
-std::string	Request::getStatus() {
+std::string	&Request::getStatus() {
 	return this->status;
 }
 
-int	Request::getStatusCode() {
+int	&Request::getStatusCode() {
 	return this->code;
 }
 
@@ -278,7 +280,7 @@ int		main() {
 	par.setMethods("POST ");
 
 
-	std::string	str = "POST         /?fjhf HTTP/1.1\r\nHost: httpbin.org;q=1.8, kkiu;q=10        \r\nPort-Secret: 8080\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhyujk\r\n3\r\nyty\r\n0\r\n\r\n";
+	std::string	str = "POST         /?fjhf HTTP/1.1\r\nHost: httpbin.org;q=1.8, kkiu;q=10        \r\nPort-Secret: 8080\r\nTransfer-Encoding: chunked\r\nTransfer-Secret: chunked\r\n\r\n5\r\nhyujk\r\n3\r\nyty\r\n0\r\n\r\n";
 	req.parse(str);
 	resp.initialization(req);
 
