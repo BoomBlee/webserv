@@ -280,7 +280,7 @@ int		main() {
 	par.setMethods("POST ");
 
 
-	std::string	str = "GET         errors/400.html?fjhf HTTP/1.1\r\nHost: httpbin.org;q=1.8, kkiu;q=10        \r\nPort-Secret: 8080\r\nTransfer-Encoding: chunked\r\nTransfer-Secret: chunked\r\n\r\n5\r\nhyujk\r\n3\r\nyty\r\n0\r\n\r\n";
+	std::string	str = "PUT         88.html?fjhf HTTP/1.1\r\nHost: httpbin.org;q=1.8, kkiu;q=10        \r\nPort-Secret: 8080\r\nTransfer-Encoding: chunked\r\nTransfer-Secret: chunked\r\n\r\n5\r\nhyujk\r\n3\r\nyty\r\n0\r\n\r\n";
 	req.parse(str);
 	resp.initialization(req);
 

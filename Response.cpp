@@ -18,6 +18,8 @@ void	Response::initialization(Request &req) {
 	this->setHeaders();
 	if (this->req.getMethod() == "GET")
 		this->executeGET();
+	if (this->req.getMethod() == "PUT")
+		this->executePUT();
 }
 
 void	Response::setCGIEnv() {
@@ -93,7 +95,13 @@ void	Response::executePOST() {
 }
 
 void	Response::executePUT() {
-	
+	std::fstream	fd((this->req.getPath() + "").c_str() , std::fstream::out | std::fstream::trunc);
+	fd << this->req.getBody();
+	this->ask.clear();
+	this->ask += this->req.getVersion() + " " + std::string(std::to_string(this->req.getStatusCode())) + " " + this->req.getStatus() + "\r\n";
+	for (std::map<std::string, std::string>::iterator it = this->headers.begin(); it != this->headers.end(); ++it) {
+		this->ask += it->first + ": " + it->second + "\r\n";
+	}
 }
 
 
