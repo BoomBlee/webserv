@@ -1,48 +1,11 @@
-#include <algorithm>
-// #include <asm-generic/socket.h>
-#include <cctype>
-#include <cstddef>
-#include <cstdlib>
-#include <exception>
-#include <iostream>
-#include <iterator>
-#include <netinet/in.h>
-#include <ostream>
-#include <string>
-#include <cstring>
-#include <errno.h>
-#include <sys/poll.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <arpa/inet.h>
-#include <poll.h>
 
-#include <map>
-#include <list>
-#include <utility>
-#include <vector>
-#include <stack> 
-
-
-class	ConfigServer{};
+#include "test.hpp"
 
 //================================================================================================================================================
 //================================================================================================================================================
 //================================================================================================================================================
 
-class	BaseError : public std::exception {
-public:
-	BaseError(std::string &message, int &error);
-	virtual ~BaseError() throw ();
-	virtual	const char *what() const throw ();
-	const int			&getErrorNumber() const throw ();
-private:
-	int			numError;
-	std::string	message;
-}; // базовый класс ошибок
+
 
 BaseError::BaseError(std::string &message, int &error) : std::exception(), numError(error), message(message) {}
 
@@ -60,17 +23,7 @@ const int	&BaseError::getErrorNumber() const throw() {
 //================================================================================================================================================
 //================================================================================================================================================
 
-class	ConstatsParametrs {
-public:
-	ConstatsParametrs() {}
-	~ConstatsParametrs() {}
-	std::vector<std::string>	&getMethods();
-	void		setMethods(std::string);
-private:
-	std::vector<std::string>							methods;
-	std::string											version;
-	std::map<std::string, std::vector<std::string> >		headers;
-};
+
 
 
 std::vector<std::string>	&ConstatsParametrs::getMethods() {
@@ -87,53 +40,7 @@ void	ConstatsParametrs::setMethods(std::string method) {
 
 
 
-class	Request {
-public:
-	Request(ConstatsParametrs &);
-	Request(Request &);
-	Request	&operator=(Request &);
-	~Request();
-	void	parse(std::string &);
-	std::string	getNewLine(std::string &);
-	void	validator(std::string &);
-	void	setMethod(std::string);
-	void	setPath(std::string &);
-	void	setQuery(std::string &);
-	void	setVersion(std::string &);
-	void	setHeaders(std::string &);
-	void	setBody(std::string &);
-	void	chunkedBody(std::string &);
-	std::string	getMethod(std::string &);
-	std::list<std::pair<std::string, double> >	getValue(std::string &);
 
-	std::string	getMethod();
-	std::string	getPath();
-	std::string	getQuery();
-	std::string	getVersion();
-	std::map<std::string, std::list<std::pair<std::string, double> > >	getHeaders();
-	std::string	getBody();
-	std::string	getStatus();
-	int			getStatusCode();
-	// std::map<std::string, std::string>	getCGIEnv();
-
-	class	RequestError : public BaseError {
-	public:
-		RequestError(std::string, int);
-		virtual ~RequestError() throw () {};
-	};
-private:
-	std::string															method;
-	std::string															path;
-	std::string															query;
-	std::string															version;
-	std::map<std::string, std::list<std::pair<std::string, double> > >	headers;//1 параметр мапы название хедера, 2 параметр мапы его значения и их вес
-	std::string															body;
-	int																	code;//код ошибки или успеха
-	std::string															status;
-	// std::map<std::string, std::string>									cgiEnv;
-	ConstatsParametrs													*params;
-	ConfigServer														conf;
-}; // класс обрабатывающий запросы клиента
 
 Request::Request(ConstatsParametrs &params) : params(&params) {}
 
@@ -211,6 +118,13 @@ void	Request::setMethod(std::string str) {
 	throw Request::RequestError("Method Not Allowed", 405);
 }
 
+// size_t	skipspace(std::string &str) {
+// 	std::string::iterator it = str.begin();
+// 	for (; *it == ' '; it++) {}
+// 	std::string		str1(it, str.end());
+// 	return it - str.begin();
+// }
+
 size_t	skipspace(std::string &str) {
 	std::string::iterator it = str.begin();
 	for (; *it == ' '; it++) {}
@@ -225,11 +139,6 @@ size_t	reverseskipspace(std::string &str) {
 	return it - str.rbegin();
 }
 
-size_t	skiptospace(std::string &str, size_t &zero) {
-	std::string::iterator it = str.begin() + zero;
-	for (; *it != ' '; it++) {}
-	return it - str.begin() - zero;
-}
 
 void	Request::setPath(std::string &str) {
 	size_t	pos = skipspace(str);
@@ -262,7 +171,8 @@ void	Request::setVersion(std::string &str) {
 void	Request::setHeaders(std::string &str) {
 	for (std::string str1 = this->getNewLine(str); str1 != ""; str1 = this->getNewLine(str)) {
 		std::string	methodName = this->getMethod(str1);
-		this->headers[methodName] = this->getValue(str1);
+		std::list<std::pair<std::string, double> >	value = this->getValue(str1);
+		this->headers[methodName] = value;
 	}
 }
 
@@ -361,13 +271,16 @@ Request::RequestError::RequestError(std::string status, int numerr) : BaseError(
 int		main() {
 	ConstatsParametrs	par;
 	Request				req(par);
+	Response			resp;
 
 	par.setMethods("GET ");
 	par.setMethods("PUT ");
 	par.setMethods("POST ");
 
 
-	std::string	str = "POST         /?fjhf HTTP/1.1\r\nHost: httpbin.org;q=1.8, kkiu;q=10        \r\nPort: 8080\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhyujk\r\n3\r\nyty\r\n0\r\n\r\n";
+	std::string	str = "POST         /?fjhf HTTP/1.1\r\nHost: httpbin.org;q=1.8, kkiu;q=10        \r\nPort-Secret: 8080\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhyujk\r\n3\r\nyty\r\n0\r\n\r\n";
 	req.parse(str);
+	resp.initialization(req);
+
 	return 0;
 }

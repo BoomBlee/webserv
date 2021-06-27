@@ -70,14 +70,13 @@ CONFIG
 class	ConfigServer {
 public:
 	ConfigServer() {
-		// this->host = 2130706440;
+		// this->host = 2130706440; 10.0.3.1
 		this->host = 0;
-		this->host = 127 << 8;
+		this->host = 10 << 8;
 		this->host = (this->host + 0) << 8;
-		this->host = (this->host + 0) << 8;
-		this->host += 15;
-		// std::cout << this->host << std::endl;
-		this->port = 9090;
+		this->host = (this->host + 3) << 8;
+		this->host += 1;
+		this->port = 80;
 	}
 	~ConfigServer() {}
 	int		getHost();
