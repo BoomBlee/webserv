@@ -70,9 +70,22 @@ int		Response::connectionAccept() {
 }
 
 void	Response::executeGET() {
-	this->headers["Content-Type"];
-	this->headers["Content-Length"];
+	std::fstream	fd((this->req.getPath() + "").c_str() , std::fstream::in);
+	std::string		body;
+	std::string str;
 
+	while (!fd.eof()) {
+		getline(fd, str);
+		body += str + "\n";
+	}
+	this->headers["Content-Type"];
+	this->headers["Content-Length"] = std::string(std::to_string(body.size()));
+	this->ask.clear();
+	this->ask += this->req.getVersion() + " " + std::string(std::to_string(this->req.getStatusCode())) + " " + this->req.getStatus() + "\r\n";
+	for (std::map<std::string, std::string>::iterator it = this->headers.begin(); it != this->headers.end(); ++it) {
+		this->ask += it->first + ": " + it->second + "\r\n";
+	}
+	this->ask += "\r\n" + body + "\r\n";
 }
 
 void	Response::executePOST() {

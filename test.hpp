@@ -10,6 +10,7 @@
 #include <iterator>
 #include <netinet/in.h>
 #include <ostream>
+#include <fstream>
 #include <string>
 #include <cstring>
 #include <errno.h>
@@ -21,6 +22,7 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <stdlib.h>
 
 #include <map>
 #include <list>
