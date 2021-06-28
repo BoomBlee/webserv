@@ -21,27 +21,27 @@ struct server
 	std::map<std::string, std::string> params;
 };
 
-template<class InputIt, class T>
-InputIt find(InputIt first, InputIt last, const T& value)
-{
-	for (; first != last; ++first) {
-		if (*first == value) {
-			return first;
-		}
-	}
-	return last;
-}
+// template<class InputIt, class T>
+// InputIt find(InputIt first, InputIt last, const T& value)
+// {
+// 	for (; first != last; ++first) {
+// 		if (*first == value) {
+// 			return first;
+// 		}
+// 	}
+// 	return last;
+// }
 
-template<class InputIt, class UnaryPredicate>
-InputIt find_if_not(InputIt first, InputIt last, UnaryPredicate q)
-{
-	for (; first != last; ++first) {
-		if (!q(*first)) {
-			return first;
-		}
-	}
-	return last;
-}
+// template<class InputIt, class UnaryPredicate>
+// InputIt find_if_not(InputIt first, InputIt last, UnaryPredicate q)
+// {
+// 	for (; first != last; ++first) {
+// 		if (!q(*first)) {
+// 			return first;
+// 		}
+// 	}
+// 	return last;
+// }
 
 
 void trim(std::string& src)
@@ -157,12 +157,32 @@ server parse_server(std::ifstream& file, std::string& str) {
 			bracket = CLOSE_BRACKET;
 		}
 		else {
+			//search server_name;
 			write_param(str, serv.params);
 		}
 	}
 	if (bracket == OPEN_BRACKET)
 		throw std::logic_error("error config:bracket");
 	return serv;
+}
+
+void print_params(std::vector<server> &config) {
+	for (size_t i=0; i < config.size(); ++i) {
+		std::cout << BLUE << i << RESET << std::endl;
+		for (std::map<std::string, std::string>::iterator it=config[i].params.begin(); it != config[i].params.end(); ++it) {
+			std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
+		}
+		for (size_t k=0; k < config[i].locations.size(); ++k) {
+			std::cout << YELLOW << "location " << RESET << config[i].locations[k].path << std::endl;
+			for (std::map<std::string, std::string>::iterator it=config[i].locations[k].params.begin(); it != config[i].locations[k].params.end(); ++it) {
+				std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
+			}
+		}
+	}
+}
+
+void write_cgi_env(std::map<std::string, std::string>& cgi_env, std::vector<server> &config) {
+	
 }
 
 int main() {
@@ -189,19 +209,6 @@ int main() {
 		}
 		file.close();
 	}
-
-	for (size_t i=0; i < config.size(); ++i) {
-		std::cout << BLUE << i << RESET << std::endl;
-		for (std::map<std::string, std::string>::iterator it=config[i].params.begin(); it != config[i].params.end(); ++it) {
-			std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
-		}
-		for (size_t k=0; k < config[i].locations.size(); ++k) {
-			std::cout << YELLOW << "location " << RESET << config[i].locations[k].path << std::endl;
-			for (std::map<std::string, std::string>::iterator it=config[i].locations[k].params.begin(); it != config[i].locations[k].params.end(); ++it) {
-				std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
-			}
-		}
-	}
-
+	print_params(config);
 	return 0;
 }
