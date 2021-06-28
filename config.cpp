@@ -8,18 +8,29 @@
 #define CLOSE_BRACKET 0
 #define OPEN_BRACKET 1
 
-struct location
+class Location
 {
+private:
 	std::string path;
 	std::map<std::string, std::string> params;
+public:
+	Location() {};
+	~Location() {};
+	std::string& getPath() {return path;};
+	std::map<std::string, std::string>& getParams() {return params;};
 };
 
 
-class server
+class Server
 {
-	public:
-	std::vector<location> locations;
+private:
+	std::vector<Location> locations;
 	std::map<std::string, std::string> params;
+public:
+	Server() {};
+	~Server() {};
+	std::vector<Location>& getLocations() {return locations;};
+	std::map<std::string, std::string>& getParams() {return params;};
 };
 
 // template<class InputIt, class T>
@@ -69,13 +80,13 @@ void write_param(std::string& str, std::map<std::string, std::string>& params) {
 	}
 }
 
-location parse_location(std::ifstream& file, std::string& str) {
-	location loc;
+Location parse_location(std::ifstream& file, std::string& str) {
+	Location loc;
 	size_t pos;
 	bool bracket = CLOSE_BRACKET;
 
 	if ((pos = str.find(" ")) != std::string::npos) {
-		loc.path.insert(0, str, 0, pos);
+		loc.getPath().insert(0, str, 0, pos);
 		str = str.substr(pos);
 		trim(str);
 		if (str.find("{") != std::string::npos) {
@@ -93,7 +104,7 @@ location parse_location(std::ifstream& file, std::string& str) {
 		}
 	}
 	else {
-		loc.path.insert(0, str);
+		loc.getPath().insert(0, str);
 		getline (file,str);
 		trim(str);
 		if (str.find("{", 0) != std::string::npos) {
@@ -115,7 +126,7 @@ location parse_location(std::ifstream& file, std::string& str) {
 			throw std::logic_error("error config: bracket parse_loc");
 		}
 		else {
-			write_param(str, loc.params);
+			write_param(str, loc.getParams());
 		}
 	}
 	if (bracket == OPEN_BRACKET)
@@ -123,8 +134,8 @@ location parse_location(std::ifstream& file, std::string& str) {
 	return loc;
 }
 
-server parse_server(std::ifstream& file, std::string& str) {
-	server serv;
+Server parse_server(std::ifstream& file, std::string& str) {
+	Server serv;
 	bool bracket = CLOSE_BRACKET;
 
 	str = str.substr(6);
@@ -150,7 +161,7 @@ server parse_server(std::ifstream& file, std::string& str) {
 		if (str.find("location", 0, 8) != std::string::npos) {
 			str = str.substr(8);
 			trim(str);
-			serv.locations.push_back(parse_location(file, str));
+			serv.getLocations().push_back(parse_location(file, str));
 			// std::cout << "123 " << str << std::endl;
 		}
 		// else if (str.find("}") != std::string::npos) {
@@ -159,7 +170,7 @@ server parse_server(std::ifstream& file, std::string& str) {
 		}
 		else {
 			//search server_name;
-			write_param(str, serv.params);
+			write_param(str, serv.getParams());
 		}
 	}
 	if (bracket == OPEN_BRACKET)
@@ -167,29 +178,29 @@ server parse_server(std::ifstream& file, std::string& str) {
 	return serv;
 }
 
-void print_params(std::vector<server> &config) {
+void print_params(std::vector<Server> &config) {
 	for (size_t i=0; i < config.size(); ++i) {
 		std::cout << BLUE << i << RESET << std::endl;
-		for (std::map<std::string, std::string>::iterator it=config[i].params.begin(); it != config[i].params.end(); ++it) {
+		for (std::map<std::string, std::string>::iterator it=config[i].getParams().begin(); it != config[i].getParams().end(); ++it) {
 			std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
 		}
-		for (size_t k=0; k < config[i].locations.size(); ++k) {
-			std::cout << YELLOW << "location " << RESET << config[i].locations[k].path << std::endl;
-			for (std::map<std::string, std::string>::iterator it=config[i].locations[k].params.begin(); it != config[i].locations[k].params.end(); ++it) {
+		for (size_t k=0; k < config[i].getLocations().size(); ++k) {
+			std::cout << YELLOW << "location " << RESET << config[i].getLocations()[k].getPath() << std::endl;
+			for (std::map<std::string, std::string>::iterator it=config[i].getLocations()[k].getParams().begin(); it != config[i].getLocations()[k].getParams().end(); ++it) {
 				std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
 			}
 		}
 	}
 }
 
-void write_cgi_env(std::map<std::string, std::string>& cgi_env, std::vector<server> &config) {
+void write_cgi_env(std::map<std::string, std::string>& cgi_env, std::vector<Server> &config) {
 	
 }
 
 int main() {
 	std::string str;
 	std::ifstream file("example.conf");
-	std::vector<server> config;
+	std::vector<Server> config;
 
 	if (file.is_open())
 	{
