@@ -15,8 +15,9 @@ struct location
 };
 
 
-struct server
+class server
 {
+	public:
 	std::vector<location> locations;
 	std::map<std::string, std::string> params;
 };
