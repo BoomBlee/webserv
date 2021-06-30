@@ -42,10 +42,10 @@ void	Response::setCGIEnv() {
 
 void	Response::setHeaders() {
 	this->headers.clear();
-	// this->headers["Connection"] = this->connectionAccept() ? "keep-alive" : "close";
-	// this->headers["Date"] = this->getDate();
-	// this->headers["Location"] = "None"; // full PATH
-	// this->headers["Server"] = "WebServ/1.1";
+	this->headers["Connection"] = this->connectionAccept() ? "keep-alive" : "close";
+	this->headers["Date"] = this->getDate();
+	this->headers["Location"] = "None"; // full PATH
+	this->headers["Server"] = "WebServ/1.1";
 }
 
 std::string	Response::getDate() {
@@ -63,8 +63,8 @@ int		Response::connectionAccept() {
 }
 
 void	Response::executeGET() {
-	// std::fstream	fd((this->req.getPath() + "").c_str() , std::fstream::in);
-	std::fstream	fd((std::string("./errors/error_404.html")).c_str() , std::fstream::in);
+	std::fstream	fd((this->req.getPath()).c_str() , std::fstream::in);
+	// std::fstream	fd((std::string("./errors/error_404.html")).c_str() , std::fstream::in);
 	std::string		body;
 	std::string str;
 
@@ -75,8 +75,8 @@ void	Response::executeGET() {
 	this->headers["Content-Type"] = "text/html";
 	this->headers["Content-Length"] = std::string(std::to_string(body.size()));
 	this->ask.clear();
-	// this->ask += this->req.getVersion() + " " + std::string(std::to_string(this->req.getStatusCode())) + " " + this->req.getStatus() + "\r\n";
-	this->ask += std::string("HTTP/1.1") + " " + std::to_string(200) + " OK\r\n";
+	this->ask += this->req.getVersion() + " " + std::string(std::to_string(this->req.getStatusCode())) + " " + this->req.getStatus() + "\r\n";
+	// this->ask += std::string("HTTP/1.1") + " " + std::to_string(200) + " OK\r\n";
 	for (std::map<std::string, std::string>::iterator it = this->headers.begin(); it != this->headers.end(); ++it) {
 		this->ask += it->first + ": " + it->second + "\r\n";
 	}
