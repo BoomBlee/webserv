@@ -5,11 +5,16 @@ int main () {
 		ConfigServer	conf;
 		Server	serv(conf);
 
-		serv.accept();
+		long fd = serv.accept();
 		int n = 0;
-		// while (n == 0) {
-		// 	struct pf
-		// }
+		struct pollfd fds[1];
+		while (n == 0) {
+			fds[0].fd = fd;
+			fds[0].events = POLLIN;
+			poll(fds, 1, 1000);
+			if (fds[0].revents == POLLIN)
+				n = 1;
+		}
 		try {
 			serv.recv();
 		}
@@ -28,5 +33,7 @@ int main () {
 	catch (BaseException &e) {
 		std::cout << e.what() << std::endl;
 	}
+	// std::string	str("/hello/myserv.html");
+	// std::cout << str.find("/hello") << std::endl;
 	return 0;
 }

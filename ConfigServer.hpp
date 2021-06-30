@@ -4,8 +4,9 @@ class	ConfigServer {
 public:
 	ConfigServer();
 	~ConfigServer() {}
-	int		getHost();
-	int		getPort();
+	int		&getHost();
+	int		&getPort();
+	std::map<std::string, ConfigLocation>	&getLocations();
 private:
 	int		host;
 	int		port;

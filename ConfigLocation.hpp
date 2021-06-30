@@ -12,4 +12,5 @@ private:
 public:
 	ConfigLocation();
 	~ConfigLocation();
+	std::string	&getPath();
 };

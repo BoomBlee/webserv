@@ -39,15 +39,22 @@ void	Request::parse(std::string &reading) {
 		this->status = std::string(e.what());
 	}
 	// this->setCGIEnv();
-	std::cout << this->method << std::endl;
-	std::cout << this->path << std::endl;
-	std::cout << this->query << std::endl;
-	std::cout << this->version << std::endl;
-	// std::cout << this->headers.begin()->first << std::endl;
-	// std::cout << this->headers.begin()->second.begin()->first << std::endl;
-	std::cout << this->body << std::endl;
-	std::cout << this->status << std::endl;
-	std::cout << this->code << std::endl;
+	std::cout << "Method: " << this->method << "|" << std::endl;
+	std::cout << "Path: " << this->path  << "|" << std::endl;
+	std::cout << "Query: " << this->query  << "|" << std::endl;
+	std::cout << "Version: " << this->version  << "|" << std::endl;
+	std::cout << "Headers:" << std::endl;
+	for (std::map<std::string, std::list<std::pair<std::string, double> > >::iterator it = this->headers.begin(); it != this->headers.end(); ++it) {
+		std::cout << it->first << "=";
+		for (std::list<std::pair<std::string, double> >::iterator it1 = it->second.begin(); it1 != it->second.end(); ++it1) {
+			std::cout << it1->first << ";";
+		}
+		std::cout << std::endl;
+	}
+	std::cout << "\n|||||" << std::endl;
+	std::cout << "Body:\n" << this->body  << "\n||||" << std::endl;
+	std::cout << "Status: " << this->status  << "|" << std::endl;
+	std::cout << "Code: " << this->code  << "|" << std::endl;
 }
 
 std::string	Request::getNewLine(std::string &str) {
@@ -88,6 +95,10 @@ void	Request::setPath(std::string &str) {
 		len = str.find_first_of(' ', pos);
 	len -= pos;
 	this->path = str.substr(pos, len);
+	for (std::map<std::string, ConfigLocation>::iterator it = this->conf.getLocations().begin(); it != this->conf.getLocations().end(); ++it) {
+		if (this->path.find(it->first) == 0)
+			this->path = it->second.getPath() + this->path.substr(it->first.size());
+	}
 	str = str.substr(pos + len);
 	this->setQuery(str);
 	this->setVersion(str);
@@ -111,6 +122,7 @@ void	Request::setVersion(std::string &str) {
 
 void	Request::setHeaders(std::string &str) {
 	std::string str1;
+	this->headers.clear();
 	for (str1 = this->getNewLine(str); str1 != ""; str1 = this->getNewLine(str)) {
 		std::string	methodName = this->getMethod(str1);
 		std::list<std::pair<std::string, double> >	value = this->getValue(str1);

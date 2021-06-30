@@ -51,6 +51,7 @@ void	Server::recv() {
 		else if (this->reading.size() >= len + 4 + std::atoi(this->reading.substr(this->reading.find("Content-Length:") + 15, 10).c_str()))
 			throw Server::ServerException("Full body", 1);
 	}
+	throw Server::ServerException("Full body", 1);
 }
 
 int		Server::chunked_detect(size_t &pos, std::string &reading) {
