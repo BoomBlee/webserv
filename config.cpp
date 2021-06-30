@@ -8,7 +8,7 @@
 #define CLOSE_BRACKET 0
 #define OPEN_BRACKET 1
 
-class Location
+class ConfigLocation
 {
 private:
 	bool _autoindex;
@@ -20,8 +20,8 @@ private:
 	std::vector<std::string>	_Methods;
 	// std::map<std::string, std::string> params;
 public:
-	Location() : _autoindex(true) {};
-	~Location() {};
+	ConfigLocation() : _autoindex(true) {};
+	~ConfigLocation() {};
 	bool& getAutoindex() {return _autoindex;}
 	std::string& getPath() {return _path;};
 	std::string& getUploadPath() {return _upload_path;};
@@ -33,18 +33,18 @@ public:
 };
 
 
-class Server
+class ConfigServer
 {
 private:
 	int	_host;
 	int _port;
 	std::string _serverName;
-	std::vector<Location> _locations;
+	std::map<std::string, ConfigLocation> _locations;
 	// std::map<std::string, std::string> params;
 public:
-	Server() {};
-	~Server() {};
-	std::vector<Location>& getLocations() {return _locations;};
+	ConfigServer() {};
+	~ConfigServer() {};
+	std::map<std::string, ConfigLocation>& getLocations() {return _locations;};
 	int&	getHost() {return _host;};
 	int&	getPort() {return _port;};
 	std::string&	getServerName() {return _serverName;};
@@ -82,10 +82,16 @@ void trim(std::string& src)
 }
 
 void write_methods(std::string& str, std::vector<std::string>& methods) {
-	
+	size_t pos;
+
+	while ((pos = str.find(" ")) != std::string::npos) {
+		methods.push_back(str.substr(0, pos));
+		str.erase(0, pos + 1);
+	}
+	methods.push_back(str.substr(0));
 }
 
-void write_params_loc(std::string& str, Location& loc) {
+void write_params_loc(std::string& str, ConfigLocation& loc) {
 	size_t pos;
 	std::string second_str;
 	std::string first_str;
@@ -103,10 +109,13 @@ void write_params_loc(std::string& str, Location& loc) {
 			else if (second_str == "off")
 				loc.getAutoindex() = false;
 			else
-				throw std::logic_error("error config: invalid params \"" + str + "\"");
+				throw std::string("error config: invalid params \"" + str + "\"");
 		}
 		else if (first_str == "upload_path") {
 			loc.getUploadPath() = second_str;
+		}
+		else if (first_str == "root") {
+			loc.getPath() = second_str;
 		}
 		else if (first_str == "cgi_path") {
 			loc.getCgiPath() = second_str;
@@ -117,19 +126,48 @@ void write_params_loc(std::string& str, Location& loc) {
 		else if (first_str == "index") {
 			loc.getIndex() = second_str;
 		}
+		else if (first_str == "cgi_extension") {
+			loc.getType() = second_str;
+		}
 		else if (first_str == "method") {
-			write_methods(second_str, loc.getMethods());
+			if (second_str.empty())
+				throw std::string("error config: no params method");
+			else
+				write_methods(second_str, loc.getMethods());
 		}
 		else {
-			throw std::logic_error("error config: not found params \"" + str + "\"");//
+			throw std::string("error config: not found params \"" + str + "\"");//
 		}
 	}
 	else if (!str.empty()) {
-		throw std::logic_error("error config: write_params \"" + str + "\"");
+		throw std::string("error config: write_params \"" + str + "\"");
 	}
 }
 
-void write_params_server(std::string& str, Server& server) {
+int hostToInt(std::string& str) {
+	int ip = 0;
+	size_t pos;
+
+	if ((pos = str.find(".")) != std::string::npos) {
+		ip = atoi(str.substr(0, pos).c_str()) << 8;
+		str.erase(0, pos + 1);
+		if ((pos = str.find(".")) != std::string::npos) {
+			ip = (ip + atoi(str.substr(0, pos).c_str())) << 8;
+			str.erase(0, pos + 1);
+			if ((pos = str.find(".")) != std::string::npos) {
+				ip = (ip + atoi(str.substr(0, pos).c_str())) << 8;
+				str.erase(0, pos + 1);
+				if (!str.empty()) {
+					ip = (ip + atoi(str.substr(0).c_str()));
+					return ip;
+				}
+			}
+		}
+	}
+	throw std::string("error config: invalid host \"" + str + "\"");
+}
+
+void write_params_server(std::string& str, ConfigServer& server) {
 	size_t pos;
 	std::string second_str;
 	std::string first_str;
@@ -145,29 +183,29 @@ void write_params_server(std::string& str, Server& server) {
 			server.getPort() = atoi(second_str.c_str());
 		}
 		else if (first_str == "host") {
-			server.getHost() = atoi(second_str.c_str());
+			server.getHost() = hostToInt(second_str);
 		}
 		else if (first_str == "server_name") {
 			server.getServerName() = second_str;
 		}
 		else {
-			throw std::logic_error("error config: not found params \"" + str + "\"");//
+			throw std::string("error config: not found params \"" + str + "\"");//
 		}
 	}
 	else if (!str.empty()) {
-		throw std::logic_error("error config: write_params \"" + str + "\"");
+		throw std::string("error config: write_params \"" + str + "\"");
 	}
 }
 
-Location parse_location(std::ifstream& file, std::string& str) {
-	Location loc;
+ConfigLocation parse_location(std::ifstream& file, std::string& str) {
+	ConfigLocation loc;
 	size_t pos;
 	bool bracket = CLOSE_BRACKET;
 
-	if ((pos = str.find(" ")) != std::string::npos) {
-		loc.getPath().insert(0, str, 0, pos);
-		str = str.substr(pos);
-		trim(str);
+	// if ((pos = str.find(" ")) != std::string::npos) {
+		// loc.getPath().insert(0, str, 0, pos);
+		// str = str.substr(pos);
+		// trim(str);
 		if (str.find("{") != std::string::npos) {
 			bracket = OPEN_BRACKET;
 		}
@@ -178,43 +216,43 @@ Location parse_location(std::ifstream& file, std::string& str) {
 				bracket = OPEN_BRACKET;
 			}
 			else {
-				throw std::logic_error("error config");
+				throw std::string("error config");
 			}
 		}
-	}
-	else {
-		loc.getPath().insert(0, str);
-		getline (file,str);
-		trim(str);
-		if (str.find("{", 0) != std::string::npos) {
-			bracket = OPEN_BRACKET;
-		}
-		else {
-			throw std::logic_error("error config: no open bracket location");
-		}
-	}
+	// }
+	// else {
+		// loc.getPath().insert(0, str);
+		// getline (file,str);
+		// trim(str);
+		// if (str.find("{", 0) != std::string::npos) {
+		// 	bracket = OPEN_BRACKET;
+		// }
+		// else {
+		// 	throw std::string("error config: no open bracket location");
+		// }
+	// }
 	while (bracket == OPEN_BRACKET) {
 		// if (file.eof())
-		// 	throw std::logic_error("error config: bracket parse_loc");
+		// 	throw std::string("error config: bracket parse_loc");
 		getline (file,str);
 		trim(str);
 		if (str.find("}") != std::string::npos) {
 			bracket = CLOSE_BRACKET;
 		}
 		else if (str.find("{") != std::string::npos) {
-			throw std::logic_error("error config: bracket parse_loc");
+			throw std::string("error config: bracket parse_loc");
 		}
 		else {
 			write_params_loc(str, loc);
 		}
 	}
 	if (bracket == OPEN_BRACKET)
-		throw std::logic_error("error config:bracket");
+		throw std::string("error config:bracket");
 	return loc;
 }
 
-Server parse_server(std::ifstream& file, std::string& str) {
-	Server serv;
+ConfigServer parse_server(std::ifstream& file, std::string& str) {
+	ConfigServer serv;
 	bool bracket = CLOSE_BRACKET;
 
 	str = str.substr(6);
@@ -229,18 +267,24 @@ Server parse_server(std::ifstream& file, std::string& str) {
 			bracket = OPEN_BRACKET;
 		}
 		else {
-			throw std::logic_error("error config: no open bracket server");;
+			throw std::string("error config: no open bracket server");;
 		}
 	}
 	while (bracket == OPEN_BRACKET) {
 		if (file.eof())
-			throw std::logic_error("error config: bracket parse_serv");
+			throw std::string("error config: bracket parse_serv");
 		getline (file,str);
 		trim(str);
 		if (str.find("location", 0, 8) != std::string::npos) {
 			str = str.substr(8);
 			trim(str);
-			serv.getLocations().push_back(parse_location(file, str));
+
+			std::string	path = str.substr(0, str.find(" "));
+			str = str.substr(str.find(" "));
+			trim(str);
+			serv.getLocations()[path] = parse_location(file, str);
+
+			// serv.getLocations().push_back(parse_location(file, str));
 			// std::cout << "123 " << str << std::endl;
 		}
 		// else if (str.find("}") != std::string::npos) {
@@ -253,29 +297,14 @@ Server parse_server(std::ifstream& file, std::string& str) {
 		}
 	}
 	if (bracket == OPEN_BRACKET)
-		throw std::logic_error("error config:bracket");
+		throw std::string("error config:bracket");
 	return serv;
 }
-
-// void print_params(std::vector<Server> &config) {
-// 	for (size_t i=0; i < config.size(); ++i) {
-// 		std::cout << BLUE << i << RESET << std::endl;
-// 		for (std::map<std::string, std::string>::iterator it=config[i].getParams().begin(); it != config[i].getParams().end(); ++it) {
-// 			std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
-// 		}
-// 		for (size_t k=0; k < config[i].getLocations().size(); ++k) {
-// 			std::cout << YELLOW << "location " << RESET << config[i].getLocations()[k].getPath() << std::endl;
-// 			for (std::map<std::string, std::string>::iterator it=config[i].getLocations()[k].getParams().begin(); it != config[i].getLocations()[k].getParams().end(); ++it) {
-// 				std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
-// 			}
-// 		}
-// 	}
-// }
 
 int main() {
 	std::string str;
 	std::ifstream file("example.conf");
-	std::vector<Server> config;
+	std::vector<ConfigServer> config;
 
 	if (file.is_open())
 	{
@@ -294,6 +323,5 @@ int main() {
 		}
 		file.close();
 	}
-	// print_params(config);
 	return 0;
 }
