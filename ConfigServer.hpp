@@ -1,4 +1,4 @@
-#include "ConstatsParametrs.hpp"
+#include "ConfigLocation.hpp"
 
 class	ConfigServer {
 public:
@@ -17,5 +17,6 @@ public:
 private:
 	int		host;
 	int		port;
-	// std::vector<ConfigLocation>	locations;
+	std::vector<std::string>	servNames;
+	std::map<std::string, ConfigLocation>	locations;
 };
