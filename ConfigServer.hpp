@@ -17,6 +17,6 @@ public:
 private:
 	int		host;
 	int		port;
-	std::vector<std::string>	servNames;
+	std::string	servName;
 	std::map<std::string, ConfigLocation>	locations;
 };
