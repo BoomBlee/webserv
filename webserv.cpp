@@ -8,25 +8,32 @@ int main () {
 		long fd = serv.accept();
 		int n = 0;
 		struct pollfd fds[1];
-		while (n == 0) {
-			fds[0].fd = fd;
-			fds[0].events = POLLIN;
-			poll(fds, 1, 1000);
-			if (fds[0].revents == POLLIN)
-				n = 1;
-		}
-		try {
-			serv.recv();
-		}
-		catch (BaseException &e) {
-			if (e.getErrorNumber() == 1) {
-				serv.parseRequest();
-				std::cout << "ff" << std::endl;
+		fds[0].fd = fd;
+		fds[0].events = POLLIN;
+		while (1) {
+			n = 0;
+			while (n == 0) {
+				std::cout << "kkk" << std::endl;
+				poll(fds, 1, 1000);
+				if (fds[0].revents == POLLIN) {
+					fds[0].revents = 0;
+					n = 1;
+				}
 			}
-			else
-				std::cout << "NO" << std::endl;
+			std::cout << "kkk1" << std::endl;
+			try {
+				serv.recv();
+			}
+			catch (BaseException &e) {
+				if (e.getErrorNumber() == 1) {
+					serv.parseRequest();
+					std::cout << "ff" << std::endl;
+				}
+				else
+					std::cout << "NO" << std::endl;
+			}
+			serv.send();
 		}
-		// serv.send(); 
 		// std::string	str("HTTP/1.1 200 OK\r\nContent-Length: 122\r\nContent-Type: text/html\r\n\r\n<html>\n<head><title>400 Bad Request</title></head>\n<body>\n<center><h1>400 Bad Request</h1></center>\n</body>\n</html>\r\n");
 		// ::send(fd, str.c_str(), str.size(), 0);
 	}

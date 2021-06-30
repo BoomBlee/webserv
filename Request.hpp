@@ -23,12 +23,14 @@ public:
 
 	std::string	&getMethod();
 	std::string	&getPath();
+	std::string	&getFullPath();
 	std::string	&getQuery();
 	std::string	&getVersion();
 	std::map<std::string, std::list<std::pair<std::string, double> > >	&getHeaders();
 	std::string	&getBody();
 	std::string	&getStatus();
 	int			&getStatusCode();
+	ConfigServer	&getConf();
 	// std::map<std::string, std::string>	getCGIEnv();
 
 	class	RequestError : public BaseException {
@@ -39,6 +41,7 @@ public:
 private:
 	std::string															method;
 	std::string															path;
+	std::string															fullPath;
 	std::string															query;
 	std::string															version;
 	std::map<std::string, std::list<std::pair<std::string, double> > >	headers;//1 параметр мапы название хедера, 2 параметр мапы его значения и их вес

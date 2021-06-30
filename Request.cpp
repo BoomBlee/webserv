@@ -15,6 +15,7 @@ void	Request::setParams(ConstatsParametrs &par) {
 Request	&Request::operator=(Request &copy) {
 	this->method = copy.method;
 	this->path = copy.path;
+	this->fullPath = copy.fullPath;
 	this->version = copy.version;
 	this->headers = copy.headers;
 	// this->cgiEnv = copy.cgiEnv;
@@ -41,6 +42,7 @@ void	Request::parse(std::string &reading) {
 	// this->setCGIEnv();
 	std::cout << "Method: " << this->method << "|" << std::endl;
 	std::cout << "Path: " << this->path  << "|" << std::endl;
+	std::cout << "FullPath: " << this->fullPath  << "|" << std::endl;
 	std::cout << "Query: " << this->query  << "|" << std::endl;
 	std::cout << "Version: " << this->version  << "|" << std::endl;
 	std::cout << "Headers:" << std::endl;
@@ -96,8 +98,10 @@ void	Request::setPath(std::string &str) {
 	len -= pos;
 	this->path = str.substr(pos, len);
 	for (std::map<std::string, ConfigLocation>::iterator it = this->conf.getLocations().begin(); it != this->conf.getLocations().end(); ++it) {
-		if (this->path.find(it->first) == 0)
-			this->path = it->second.getPath() + this->path.substr(it->first.size());
+		if (this->path.find(it->first) == 0) {
+			this->fullPath = it->second.getPath() + this->path.substr(it->first.size());
+			break;
+		}
 	}
 	str = str.substr(pos + len);
 	this->setQuery(str);
@@ -192,6 +196,10 @@ std::string	&Request::getPath() {
 	return this->path;
 }
 
+std::string	&Request::getFullPath() {
+	return this->fullPath;
+}
+
 std::string	&Request::getQuery() {
 	return this->query;
 }
@@ -214,6 +222,10 @@ std::string	&Request::getStatus() {
 
 int	&Request::getStatusCode() {
 	return this->code;
+}
+
+ConfigServer	&Request::getConf() {
+	return this->conf;
 }
 
 Request::RequestError::RequestError(std::string status, int numerr) : BaseException(status, numerr) {}

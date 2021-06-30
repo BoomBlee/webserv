@@ -2,7 +2,7 @@
 
 void	Response::initialization(Request &req) {
 	this->req = req;
-	// this->setCGIEnv();
+	this->setCGIEnv();
 	this->setHeaders();
 	// if (this->req.getMethod() == "GET")
 		this->executeGET();
@@ -24,10 +24,11 @@ void	Response::setCGIEnv() {
 		this->cgi_env["CONTENT_TYPE"] = this->req.getHeaders().find("Content-Type")->second.begin()->first;
 	}
 	this->cgi_env["GATEWAY_INTERFACE"] = "CGI/1.1";
-	this->cgi_env["PATH_INFO"]; // config(maybe request)
-	this->cgi_env["PATH_TRANSLATED"]; // full PATH_INFO
+	this->cgi_env["PATH_INFO"] = this->req.getPath(); // config(maybe request)
+	this->cgi_env["PATH_TRANSLATED"] = this->req.getFullPath(); // full PATH_INFO
 	this->cgi_env["QUERY_STRING"] = this->req.getQuery();
-	this->cgi_env["REMOTE_ADDR"]; // config (ip host)
+	int	host = this->req.getConf().getHost();
+	this->cgi_env["REMOTE_ADDR"] = std::to_string(host >> 24) + "." + std::to_string(host << 8 >> 24) + "." + std::to_string(host << 16 >> 24) + "." + std::to_string(host << 24 >> 24); // config (ip host)
 	this->cgi_env["REMOTE_IDENT"]; // NO
 	this->cgi_env["REMOTE_USER"]; // NO
 	this->cgi_env["REQUEST_METHOD"] = this->req.getMethod();
@@ -37,6 +38,11 @@ void	Response::setCGIEnv() {
 	this->cgi_env["SERVER_PORT"]; // config
 	this->cgi_env["SERVER_PROTOCOL"] = this->req.getVersion();
 	this->cgi_env["SERVER_SOFTWARE"] = this->req.getVersion();
+	std::cout << "CGI variables:" << std::endl;
+	for (std::map<std::string, std::string>::iterator it = this->cgi_env.begin(); it != this->cgi_env.end(); ++it) {
+		std::cout << "\t" << it->first << "=" << it->second << std::endl;
+	}
+	std::cout << "END CGI" << std::endl;
 }
 
 
@@ -63,7 +69,9 @@ int		Response::connectionAccept() {
 }
 
 void	Response::executeGET() {
-	std::fstream	fd((this->req.getPath()).c_str() , std::fstream::in);
+	// std::cout 
+	std::fstream	fd((this->req.getFullPath()).c_str() , std::fstream::in);
+	std::cout << "|" << this->req.getFullPath() << "|" << std::endl;
 	// std::fstream	fd((std::string("./errors/error_404.html")).c_str() , std::fstream::in);
 	std::string		body;
 	std::string str;

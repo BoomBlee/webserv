@@ -1,7 +1,7 @@
 #include "ConfigLocation.hpp"
 
 ConfigLocation::ConfigLocation() {
-	this->path = ".errors/";
+	this->path = "./errors/";
 }
 
 ConfigLocation::~ConfigLocation() {
