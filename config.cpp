@@ -11,26 +11,44 @@
 class Location
 {
 private:
-	std::string path;
-	std::map<std::string, std::string> params;
+	bool _autoindex;
+	std::string _path;
+	std::string _upload_path;
+	std::string _cgiPath;
+	std::string _type;
+	std::string _index;
+	std::vector<std::string>	_Methods;
+	// std::map<std::string, std::string> params;
 public:
-	Location() {};
+	Location() : _autoindex(true) {};
 	~Location() {};
-	std::string& getPath() {return path;};
-	std::map<std::string, std::string>& getParams() {return params;};
+	bool& getAutoindex() {return _autoindex;}
+	std::string& getPath() {return _path;};
+	std::string& getUploadPath() {return _upload_path;};
+	std::string& getCgiPath() {return _cgiPath;};
+	std::string& getType() {return _type;};
+	std::string& getIndex() {return _index;};
+	std::vector<std::string>& getMethods() {return _Methods;};
+	// std::map<std::string, std::string>& getParams() {return params;};
 };
 
 
 class Server
 {
 private:
-	std::vector<Location> locations;
-	std::map<std::string, std::string> params;
+	int	_host;
+	int _port;
+	std::string _serverName;
+	std::vector<Location> _locations;
+	// std::map<std::string, std::string> params;
 public:
 	Server() {};
 	~Server() {};
-	std::vector<Location>& getLocations() {return locations;};
-	std::map<std::string, std::string>& getParams() {return params;};
+	std::vector<Location>& getLocations() {return _locations;};
+	int&	getHost() {return _host;};
+	int&	getPort() {return _port;};
+	std::string&	getServerName() {return _serverName;};
+	// std::map<std::string, std::string>& getParams() {return params;};
 };
 
 // template<class InputIt, class T>
@@ -55,7 +73,6 @@ public:
 // 	return last;
 // }
 
-
 void trim(std::string& src)
 {
 	src.erase(find_if_not(src.rbegin(), src.rend(), ::isspace).base(), src.end()); 
@@ -64,16 +81,78 @@ void trim(std::string& src)
 	src.erase(find(src.begin(), src.end(), '#'), src.end());
 }
 
-void write_param(std::string& str, std::map<std::string, std::string>& params) {
+void write_methods(std::string& str, std::vector<std::string>& methods) {
+	
+}
+
+void write_params_loc(std::string& str, Location& loc) {
 	size_t pos;
 	std::string second_str;
+	std::string first_str;
 	size_t delete_pos;
 
 	if ((pos = str.find(" ")) != std::string::npos && (delete_pos = str.find(";")) != std::string::npos) {
 		str.erase(delete_pos);
+		first_str = str.substr(0, pos);
 		second_str = str.substr(pos);
 		trim(second_str);
-		params.insert(std::pair<std::string, std::string>(str.substr(0, pos), second_str));
+		// params.insert(std::pair<std::string, std::string>(str.substr(0, pos), second_str));
+		if (first_str == "autoindex") {
+			if (second_str == "on")
+				loc.getAutoindex() = true;
+			else if (second_str == "off")
+				loc.getAutoindex() = false;
+			else
+				throw std::logic_error("error config: invalid params \"" + str + "\"");
+		}
+		else if (first_str == "upload_path") {
+			loc.getUploadPath() = second_str;
+		}
+		else if (first_str == "cgi_path") {
+			loc.getCgiPath() = second_str;
+		}
+		else if (first_str == "type") {
+			loc.getType() = second_str;
+		}
+		else if (first_str == "index") {
+			loc.getIndex() = second_str;
+		}
+		else if (first_str == "method") {
+			write_methods(second_str, loc.getMethods());
+		}
+		else {
+			throw std::logic_error("error config: not found params \"" + str + "\"");//
+		}
+	}
+	else if (!str.empty()) {
+		throw std::logic_error("error config: write_params \"" + str + "\"");
+	}
+}
+
+void write_params_server(std::string& str, Server& server) {
+	size_t pos;
+	std::string second_str;
+	std::string first_str;
+	size_t delete_pos;
+
+	if ((pos = str.find(" ")) != std::string::npos && (delete_pos = str.find(";")) != std::string::npos) {
+		str.erase(delete_pos);
+		first_str = str.substr(0, pos);
+		second_str = str.substr(pos);
+		trim(second_str);
+		// params.insert(std::pair<std::string, std::string>(str.substr(0, pos), second_str));
+		if (first_str == "port") {
+			server.getPort() = atoi(second_str.c_str());
+		}
+		else if (first_str == "host") {
+			server.getHost() = atoi(second_str.c_str());
+		}
+		else if (first_str == "server_name") {
+			server.getServerName() = second_str;
+		}
+		else {
+			throw std::logic_error("error config: not found params \"" + str + "\"");//
+		}
 	}
 	else if (!str.empty()) {
 		throw std::logic_error("error config: write_params \"" + str + "\"");
@@ -126,7 +205,7 @@ Location parse_location(std::ifstream& file, std::string& str) {
 			throw std::logic_error("error config: bracket parse_loc");
 		}
 		else {
-			write_param(str, loc.getParams());
+			write_params_loc(str, loc);
 		}
 	}
 	if (bracket == OPEN_BRACKET)
@@ -170,7 +249,7 @@ Server parse_server(std::ifstream& file, std::string& str) {
 		}
 		else {
 			//search server_name;
-			write_param(str, serv.getParams());
+			write_params_server(str, serv);
 		}
 	}
 	if (bracket == OPEN_BRACKET)
@@ -178,24 +257,20 @@ Server parse_server(std::ifstream& file, std::string& str) {
 	return serv;
 }
 
-void print_params(std::vector<Server> &config) {
-	for (size_t i=0; i < config.size(); ++i) {
-		std::cout << BLUE << i << RESET << std::endl;
-		for (std::map<std::string, std::string>::iterator it=config[i].getParams().begin(); it != config[i].getParams().end(); ++it) {
-			std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
-		}
-		for (size_t k=0; k < config[i].getLocations().size(); ++k) {
-			std::cout << YELLOW << "location " << RESET << config[i].getLocations()[k].getPath() << std::endl;
-			for (std::map<std::string, std::string>::iterator it=config[i].getLocations()[k].getParams().begin(); it != config[i].getLocations()[k].getParams().end(); ++it) {
-				std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
-			}
-		}
-	}
-}
-
-void write_cgi_env(std::map<std::string, std::string>& cgi_env, std::vector<Server> &config) {
-	
-}
+// void print_params(std::vector<Server> &config) {
+// 	for (size_t i=0; i < config.size(); ++i) {
+// 		std::cout << BLUE << i << RESET << std::endl;
+// 		for (std::map<std::string, std::string>::iterator it=config[i].getParams().begin(); it != config[i].getParams().end(); ++it) {
+// 			std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
+// 		}
+// 		for (size_t k=0; k < config[i].getLocations().size(); ++k) {
+// 			std::cout << YELLOW << "location " << RESET << config[i].getLocations()[k].getPath() << std::endl;
+// 			for (std::map<std::string, std::string>::iterator it=config[i].getLocations()[k].getParams().begin(); it != config[i].getLocations()[k].getParams().end(); ++it) {
+// 				std::cout << it->first << "=\"" << it->second << "\"" << std::endl;
+// 			}
+// 		}
+// 	}
+// }
 
 int main() {
 	std::string str;
@@ -216,11 +291,9 @@ int main() {
 					std::cerr << RED << e.what() << RESET << std::endl;
 				}
 			}
-			// std::cout << str << std::endl;
-			
 		}
 		file.close();
 	}
-	print_params(config);
+	// print_params(config);
 	return 0;
 }
