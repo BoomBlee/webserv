@@ -184,8 +184,10 @@ private:
 			bracket = OPEN_BRACKET;
 		}
 		else {
-			getline (file,str);
-			trim(str);
+			do {
+				getline (file,str);
+				trim(str);
+			} while (str.empty());
 			if ((str.find("{", 0) != std::string::npos) && bracket == CLOSE_BRACKET) {
 				bracket = OPEN_BRACKET;
 			}
@@ -221,8 +223,10 @@ private:
 			bracket = OPEN_BRACKET;
 		}
 		else {
-			getline (file,str);
-			trim(str);
+			do {
+				getline (file,str);
+				trim(str);
+			} while (str.empty());
 			if (str.find("{", 0) != std::string::npos) {
 				bracket = OPEN_BRACKET;
 			}
