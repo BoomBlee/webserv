@@ -88,7 +88,7 @@ private:
 				else if (second_str == "off")
 					loc.getAutoindex() = false;
 				else
-					throw std::string("error config: invalid params \"" + str + "\"");
+					throw std::logic_error("error config: invalid params \"" + str + "\"");
 			}
 			else if (first_str == "upload_path") {
 				loc.getUploadPath() = second_str;
@@ -110,16 +110,16 @@ private:
 			}
 			else if (first_str == "method") {
 				if (second_str.empty())
-					throw std::string("error config: no params method");
+					throw std::logic_error("error config: no params method");
 				else
 					_write_methods(second_str, loc.getMethods());
 			}
 			else {
-				throw std::string("error config: not found params \"" + str + "\"");//
+				throw std::logic_error("error config: not found params \"" + str + "\"");//
 			}
 		}
 		else if (!str.empty()) {
-			throw std::string("error config: write_params \"" + str + "\"");
+			throw std::logic_error("error config: write_params \"" + str + "\"");
 		}
 	}
 
@@ -143,7 +143,7 @@ private:
 				}
 			}
 		}
-		throw std::string("error config: invalid host \"" + str + "\"");
+		throw std::logic_error("error config: invalid host \"" + str + "\"");
 	}
 
 	void _write_params_server(std::string& str, ConfigServer& server) {
@@ -167,11 +167,11 @@ private:
 				server.getServerName() = second_str;
 			}
 			else {
-				throw std::string("error config: not found params \"" + str + "\"");//
+				throw std::logic_error("error config: not found params \"" + str + "\"");//
 			}
 		}
 		else if (!str.empty()) {
-			throw std::string("error config: write_params \"" + str + "\"");
+			throw std::logic_error("error config: write_params \"" + str + "\"");
 		}
 	}
 
@@ -190,7 +190,7 @@ private:
 				bracket = OPEN_BRACKET;
 			}
 			else {
-				throw std::string("error config");
+				throw std::logic_error("error config");
 			}
 		}
 		while (bracket == OPEN_BRACKET) {
@@ -200,14 +200,14 @@ private:
 				bracket = CLOSE_BRACKET;
 			}
 			else if (str.find("{") != std::string::npos) {
-				throw std::string("error config: bracket parse_loc");
+				throw std::logic_error("error config: bracket parse_loc");
 			}
 			else {
 				_write_params_loc(str, loc);
 			}
 		}
 		if (bracket == OPEN_BRACKET)
-			throw std::string("error config:bracket");
+			throw std::logic_error("error config:bracket");
 		return loc;
 	}
 
@@ -227,12 +227,12 @@ private:
 				bracket = OPEN_BRACKET;
 			}
 			else {
-				throw std::string("error config: no open bracket server");;
+				throw std::logic_error("error config: no open bracket server");;
 			}
 		}
 		while (bracket == OPEN_BRACKET) {
 			if (file.eof())
-				throw std::string("error config: bracket parse_serv");
+				throw std::logic_error("error config: bracket parse_serv");
 			getline (file,str);
 			trim(str);
 			if (str.find("location", 0, 8) != std::string::npos) {
@@ -256,7 +256,7 @@ private:
 			}
 		}
 		if (bracket == OPEN_BRACKET)
-			throw std::string("error config:bracket");
+			throw std::logic_error("error config:bracket");
 		return serv;
 	}
 
@@ -289,7 +289,12 @@ public:
 };
 
 int main() {
-	ConfigServers servers("example.conf");
-
+	try {
+		ConfigServers servers("example.conf");
+	}
+	catch (const std::exception& e) {
+		std::cerr << e.what() << std::endl;
+	}
+	
 	return 0;
 }
