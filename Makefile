@@ -23,25 +23,28 @@ color.hpp \
 headers.hpp
 
 SRCS = $(addsuffix .cpp,$(FILE)) \
-# $(addsuffix .cpp,$(TOOLS))
+$(addsuffix .cpp,$(TOOLS))
 
-BINS = $(addsuffix .o,$(FILE)) \
+BIN_DIR = Obj/
+BINS_FILE = $(addsuffix .o,$(FILE)) \
 $(addsuffix .o,$(TOOLS))
+BINS = $(addprefix $(BIN_DIR), $(BINS_FILE))
+BINS_TEMP = $(addprefix $(BIN_DIR), %.o)
 
-
-all: $(NAME) $(HEADERS) $(SRCS) 
+all: $(BIN_DIR) $(NAME) $(HEADERS) $(SRCS) 
 
 $(NAME): $(BINS)
-	$(CC) $(CFLAGS) $(BINS) -o $(NAME)
-	@echo "\033[1;32m"
-	@echo "$(NAME) created"
-	@echo "\033[0m"
+	@$(CC) $(CFLAGS) $(BINS) -o $(NAME)
+	@echo "\033[1;32m$(NAME) created\033[0m"
 
-%.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+$(BINS_TEMP): %.cpp $(HEADERS)
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+$(BIN_DIR):
+	@mkdir $(BIN_DIR)
 
 clean:
-	@rm -rf $(BINS)
+	@rm -rf $(BIN_DIR)
 	@echo "\033[1;33mclean completed\033[0m"
 
 fclean: clean
