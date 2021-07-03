@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "BaseException.hpp"
 
 int main () {
 	try {

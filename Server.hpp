@@ -1,4 +1,6 @@
+#pragma once
 #include "Response.hpp"
+#include "ConstatsParametrs.hpp"
 
 class	Server {
 public:

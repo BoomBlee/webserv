@@ -1,3 +1,4 @@
+#pragma once
 #include "Request.hpp"
 
 class Response

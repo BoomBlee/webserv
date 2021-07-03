@@ -1,3 +1,4 @@
+#pragma once
 #include "headers.hpp"
 
 class	BaseException : public std::exception {

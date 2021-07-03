@@ -1,3 +1,4 @@
+#pragma once
 #include "BaseException.hpp"
 
 class	ConstatsParametrs {

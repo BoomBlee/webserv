@@ -1,4 +1,6 @@
+#pragma once
 #include "ConfigServer.hpp"
+#include "ConstatsParametrs.hpp"
 
 class	Request {
 public:

@@ -67,10 +67,12 @@ int		Server::chunked_detect(size_t &pos, std::string &reading) {
 }
 
 void	Server::send() {
+	int ret;
+
 	this->response.initialization(this->request);
 	std::cout << this->response.getSizeAsk() << std::endl;
 	std::cout << this->response.getAsk() << std::endl;
-	int		ret = ::send(this->accept_socket, this->response.getAsk().c_str(), this->response.getSizeAsk(), 0);
+	ret = ::send(this->accept_socket, this->response.getAsk().c_str(), this->response.getSizeAsk(), 0);
 }
 
 void	Server::parseRequest() {

@@ -1,16 +1,25 @@
-#include "ConstatsParametrs.hpp"
+#pragma once
+#include <string>
+#include <vector>
 
-class ConfigLocation {
+class ConfigLocation
+{
 private:
-	std::string	path;
-	std::string upload_path;
-	bool		autoindex;
-	std::string cgiPath;
-	std::string	type;
-	std::string	index;
-	std::vector<std::string>	allowMethods;
+	bool _autoindex;
+	std::string _path;
+	std::string _upload_path;
+	std::string _cgiPath;
+	std::string _type;
+	std::string _index;
+	std::vector<std::string>	_Methods;
 public:
 	ConfigLocation();
 	~ConfigLocation();
-	std::string	&getPath();
+	bool& getAutoindex();
+	std::string& getPath();
+	std::string& getUploadPath();
+	std::string& getCgiPath();
+	std::string& getType();
+	std::string& getIndex();
+	std::vector<std::string>& getMethods();
 };

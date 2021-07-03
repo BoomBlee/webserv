@@ -1,15 +1,20 @@
+#pragma once
+#include <string>
+#include <map>
 #include "ConfigLocation.hpp"
 
-class	ConfigServer {
+class ConfigServer
+{
+private:
+	int	_host;
+	int _port;
+	std::string _serverName;
+	std::map<std::string, ConfigLocation> _locations;
 public:
 	ConfigServer();
-	~ConfigServer() {}
-	int		&getHost();
-	int		&getPort();
-	std::map<std::string, ConfigLocation>	&getLocations();
-private:
-	int		host;
-	int		port;
-	std::string	servName;
-	std::map<std::string, ConfigLocation>	locations;
+	~ConfigServer();
+	std::map<std::string, ConfigLocation>& getLocations();
+	int&	getHost();
+	int&	getPort();
+	std::string&	getServerName();
 };
