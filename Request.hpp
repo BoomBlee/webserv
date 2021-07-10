@@ -67,6 +67,7 @@ private:
 	void																chunkedBody(std::string &);
 
 	void																findSecretsHeaders();
+	std::string															getEnvName(std::string);
 };
 
 //================================================================================

@@ -78,6 +78,11 @@ void					CGI::clear() {
 
 void				CGI::setCGI(cmalt::Request &req) {
 	this->ret = req.getBody();
+	std::cout << BLUE << req.getRzhanoiHleb().size() << RESET << std::endl;
+	for (std::map<std::string, std::string>::iterator it = req.getRzhanoiHleb().begin(); it != req.getRzhanoiHleb().end(); ++it) {
+		this->cgiEnv[it->first] = it->second;
+		std::cout << YELLOW << it->first << " " << it->second << RESET << std::endl;
+	}
 	this->cgiEnv["SCRIPT_NAME"] = req.getLocation().getCgiPath();
 	this->cgiEnv["SCRIPT_FILENAME"] = req.getLocation().getCgiPath();
 	this->cgiEnv["REQUEST_METHOD"] = req.getMethod();
@@ -109,7 +114,7 @@ std::string			CGI::execCGI(cmalt::Request &req) {
 	pid_t	pid = fork();
 	this->workWithFork(pid, env, req);
 	this->closeTmpFile();
-	this->deleteEnv(&env);
+	this->deleteEnv(&env, req);
 	if (pid == 0)
 		exit(500);
 	return this->ret;
@@ -122,6 +127,7 @@ void				CGI::mapToChar(char ***env) {
 		std::string	newEnv = it->first + "=" + it->second;
 		(*env)[i] = new char[newEnv.size() + 1];
 		std::strcpy((*env)[i], newEnv.c_str());
+		std::cout << (*env)[i] << std::endl;
 		i++;
 	}
 	(*env)[i] = NULL;
@@ -175,12 +181,14 @@ void				CGI::closeTmpFile() {
 	close(this->saveCout);
 }
 
-void				CGI::deleteEnv(char ***env) {
+void				CGI::deleteEnv(char ***env, cmalt::Request &req) {
 	if (env && *env) {
 		for (int i = 0; (*env)[i]; ++i)
 			delete[] (*env)[i];
 		delete[] (*env);
 	}
+	for (std::map<std::string, std::string>::iterator it = req.getRzhanoiHleb().begin(); it != req.getRzhanoiHleb().end(); ++it)
+		this->cgiEnv.erase(it->first);
 }
 
 

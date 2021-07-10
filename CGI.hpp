@@ -27,7 +27,7 @@ private:
 	void								openTmpFile();
 	void								workWithFork(pid_t, char **, cmalt::Request &);
 	void								closeTmpFile();
-	void								deleteEnv(char ***);
+	void								deleteEnv(char ***, cmalt::Request &);
 	void								setCGI(cmalt::Request &);
 };
 //================================================================================

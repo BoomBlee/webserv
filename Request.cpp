@@ -40,6 +40,7 @@ Request	&Request::operator=(const Request &copy) {
 	this->conf = copy.conf;
 	this->location = copy.location;
 	this->locPath = copy.locPath;
+	this->rzhanoiHleb = copy.rzhanoiHleb;
 	return *this;
 }
 
@@ -54,6 +55,7 @@ void																Request::clear() {
 	this->headers.clear();
 	this->body.clear();
 	this->status.clear();
+	this->rzhanoiHleb.clear();
 	this->code = 0;
 }
 
@@ -80,14 +82,18 @@ void																Request::parse(std::string &str) {
 	// std::cout << "Query: " << this->query << "|" << std::endl;
 	// std::cout << "Version: " << this->version << "|" << std::endl;
 	// std::cout << "Status: " << this->status << "|" << this->code << "|" << std::endl;
-	// int	i = 0;
-	// for (std::map<std::string, std::list<std::pair<std::string, double> > >::iterator it = this->headers.begin(); it != this->headers.end(); ++it) {
-	// 	std::cout << "Header" << ++i << ": " << it->first << "=";
-	// 	for (std::list<std::pair<std::string, double> >::iterator it1 = it->second.begin(); it1 != it->second.end(); ++it1) {
-	// 		std::cout << it1->first << ":q=" << it1->second << ";";
-	// 	}
-	// 	std::cout << std::endl;
-	// }
+	int	i = 0;
+	for (std::map<std::string, std::list<std::pair<std::string, double> > >::iterator it = this->headers.begin(); it != this->headers.end(); ++it) {
+		std::cout << "Header" << ++i << ": " << it->first << "=";
+		for (std::list<std::pair<std::string, double> >::iterator it1 = it->second.begin(); it1 != it->second.end(); ++it1) {
+			std::cout << it1->first << ":q=" << it1->second << ";";
+		}
+		std::cout << std::endl;
+	}
+	i = 0;
+	for (std::map<std::string, std::string>::iterator it = this->rzhanoiHleb.begin(); it != this->rzhanoiHleb.end(); ++it) {
+		std::cout << "Secrets" << ++i << ": " << it->first << "=" << it->second << std::endl;
+	}
 	// std::cout << "Body:\n|=====================================|\n" << this->body << "\n|==============================================|" << std::endl;
 }
 
@@ -280,10 +286,19 @@ void																Request::findSecretsHeaders() {
 	std::map<std::string, std::list<std::pair<std::string, double> > >::iterator	it = this->headers.begin();
 	for (; it != this->headers.end(); ++it) {
 		if (it->first.find("Secret") != std::string::npos) {
-			std::string	name = this->getEnvName(it->first);
+			std::string	name = "HTTP_" + this->getEnvName(it->first);
 			this->rzhanoiHleb[name] = it->second.begin()->first;
 		}
 	}
+}
+
+std::string															Request::getEnvName(std::string str) {
+	for (std::string::iterator it = str.begin(); it != str.end(); ++it) {
+		*it = toupper(*it);
+		if (*it == '-')
+			*it = '_';
+	}
+	return str;
 }
 
 std::string															&Request::getMethod() {
@@ -332,6 +347,10 @@ kyoko::ConfigLocation												&Request::getLocation() {
 
 std::string															&Request::getLocPath() {
 	return this->locPath;
+}
+
+std::map<std::string, std::string>									&Request::getRzhanoiHleb() {
+	return this->rzhanoiHleb;
 }
 
 void																Request::setStatus(std::string newStatus) {
