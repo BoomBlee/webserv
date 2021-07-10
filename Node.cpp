@@ -203,6 +203,7 @@ namespace third {
 					long	fd = iter->first;
 					poll_fds[num].revents = 0;
 					pool = true;
+					this->_accept_servers.erase(fd);
 					try {
 						iter->second->send(fd);
 					}
@@ -214,9 +215,12 @@ namespace third {
 							if (fd > 0)
 								close(fd);
 						}
-						else
-							this->_recv_servers.erase(iter);
+						else {
+							this->_accept_servers[fd] = iter->second;
+							this->_recv_servers.erase(fd);
+						}
 					}
+					break;
 				}
 			}
 
@@ -239,6 +243,7 @@ namespace third {
 						if (fd > 0)
 							close(fd);
 					}
+					break;
 				}
 			}
 
@@ -258,6 +263,7 @@ namespace third {
 					catch (cmalt::BaseException &e) {
 						std::cerr << e.what() << std::endl;
 					}
+					break;
 				}
 			}
 			pool = true;

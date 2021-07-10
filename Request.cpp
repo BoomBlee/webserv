@@ -67,6 +67,7 @@ void																Request::parse(std::string &str) {
 		this->setHead(str);
 		this->setHeaders(str);
 		this->setBody(str);
+		this->findSecretsHeaders();
 		throw BaseException("OK", 200);
 	}
 	catch (BaseException &e) {
@@ -272,6 +273,16 @@ void																Request::chunkedBody(std::string &str) {
 		this->body += str.substr(i, len);
 		i += len + 2;
 		len = strtol(&str.c_str()[i], NULL, 16);
+	}
+}
+
+void																Request::findSecretsHeaders() {
+	std::map<std::string, std::list<std::pair<std::string, double> > >::iterator	it = this->headers.begin();
+	for (; it != this->headers.end(); ++it) {
+		if (it->first.find("Secret") != std::string::npos) {
+			std::string	name = this->getEnvName(it->first);
+			this->rzhanoiHleb[name] = it->second.begin()->first;
+		}
 	}
 }
 

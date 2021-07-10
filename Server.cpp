@@ -292,7 +292,7 @@ namespace third {
 				size_t	pos = this->_read_buf[accept_socket].find("Content-Length:");
 				if (pos == std::string::npos) {
 					pos = this->_read_buf[accept_socket].find("Transfer-Encoding:");
-					if (pos != std::string::npos && length != std::string::npos && this->chunked_detect(pos, accept_socket)) {
+					if (pos != std::string::npos && this->chunked_detect(pos, accept_socket)) {
 						if (this->_read_buf[accept_socket].find("0\r\n\r\n", length) + 5 == this->_read_buf[accept_socket].size()) {
 							this->_request_is_full[accept_socket] = true;
 						}
@@ -318,7 +318,8 @@ namespace third {
 		Отправка ответа
 	*/
 	void	Server::send(long& accept_socket) {
-		this->_response[accept_socket].initialisation(this->_request[accept_socket]);
+		if (this->_response[accept_socket].getAsk().size() == 0)
+			this->_response[accept_socket].initialisation(this->_request[accept_socket]);
 		std::string	str = this->_response[accept_socket].getAsk();
 		if (str.size() > TCP_SIZE) {
 			this->_response[accept_socket].setAsk(str.substr(TCP_SIZE));
@@ -331,6 +332,7 @@ namespace third {
 		else
 			std::cout << "\rResponse:\n{======================\n" << this->_response[accept_socket].getAsk() << "\n}==================" << std::endl;
 		size_t	ret = ::send(accept_socket, str.c_str(), str.size(), 0);
+		std::cout << ret << "|" << str.size() << "|"  << this->_response[accept_socket].getAsk().size() << std::endl;
 		if (ret < 0) {
 			close(accept_socket);
 			throw cmalt::BaseException("\rSend error, closing connection", 0);

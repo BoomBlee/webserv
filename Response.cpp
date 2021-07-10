@@ -257,9 +257,10 @@ void								Response::methodDELETE() {
 }
 
 void								Response::cgi() {
-	size_t	pos = 0;
-	size_t	end = this->ask.size() - 2;
 	this->ask = ::cgi.execCGI(this->req);
+	size_t	pos = 0;
+	size_t	end = this->ask.size();
+	std::cout << RED << this->ask[1000] << RESET << std::endl;
 	while (this->ask.find("\r\n\r\n", pos) != std::string::npos || this->ask.find("\r\n", pos) == pos) {
 		if (this->ask.find("Status: ", pos) == pos) {
 			this->req.setCode(std::atoi(this->ask.substr(pos + 8, 3).c_str()));

@@ -1,5 +1,4 @@
 #include "Config.hpp"
-#include <bits/c++config.h>
 #include <cstddef>
 #include <string>
 
@@ -28,6 +27,8 @@ public:
 	kyoko::ConfigServer													&getConfig();
 	kyoko::ConfigLocation												&getLocation();
 	std::string															&getLocPath();
+	
+	std::map<std::string, std::string>									&getRzhanoiHleb();
 
 	void																setStatus(std::string);
 	void																setCode(int);
@@ -46,6 +47,9 @@ private:
 	kyoko::ConfigServer													conf;
 	kyoko::ConfigLocation												location;
 	std::string															locPath;
+
+
+	std::map<std::string, std::string>									rzhanoiHleb;
 private:
 	void																clear();
 	void																sort(std::list<std::pair<std::string, double> >::iterator, std::list<std::pair<std::string, double> >::iterator);
@@ -61,6 +65,8 @@ private:
 	std::list<std::pair<std::string, double> >							getHeaderValue(size_t &);
 	void																setBody(std::string &);
 	void																chunkedBody(std::string &);
+
+	void																findSecretsHeaders();
 };
 
 //================================================================================
