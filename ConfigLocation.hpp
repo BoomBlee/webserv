@@ -19,7 +19,7 @@ private:
 	size_t	_body_size;
 
 public:
-	ConfigLocation() : _autoindex(true), _body_size(0) {};
+	ConfigLocation() : _autoindex(false), _body_size(0) {};
 	ConfigLocation(const ConfigLocation &copy) {*this = copy;};
 	~ConfigLocation() {};
 	ConfigLocation	&operator=(const ConfigLocation &copy) {

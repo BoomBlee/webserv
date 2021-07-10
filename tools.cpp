@@ -1,12 +1,17 @@
 #include "headers.hpp"
+#include <iostream>
+#include <iterator>
 
 //================================================================================
 namespace cmalt {
 //================================================================================
 size_t	skipspace(std::string &str, size_t pos) {
+	std::cout << pos << std::endl;
 	std::string::iterator it = str.begin() + pos;
+	std::cout << it - str.begin() << std::endl;
 	for (; *it == ' '; ++it) {}
-	std::string		str1(it, str.end());
+	// std::string		str1(it, str.end());
+	std::cout << it - str.begin() << std::endl;
 	return it - str.begin() - pos;
 }
 

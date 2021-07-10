@@ -292,9 +292,11 @@ namespace third {
 				size_t	pos = this->_read_buf[accept_socket].find("Content-Length:");
 				if (pos == std::string::npos) {
 					pos = this->_read_buf[accept_socket].find("Transfer-Encoding:");
-					if (pos != std::string::npos && this->chunked_detect(pos, accept_socket)) {
-						if (this->_read_buf[accept_socket].find("0\r\n\r\n") + 5 == this->_read_buf[accept_socket].size())
+					std::cout << "YES2" << std::endl;
+					if (pos != std::string::npos && length != std::string::npos && this->chunked_detect(pos, accept_socket)) {
+						if (this->_read_buf[accept_socket].find("0\r\n", length) + 3 == this->_read_buf[accept_socket].size()) {
 							this->_request_is_full[accept_socket] = true;
+						}
 					}
 					else if (pos == std::string::npos)
 						this->_request_is_full[accept_socket] = true;
@@ -306,9 +308,11 @@ namespace third {
 						this->_request_is_full[accept_socket] = true;
 				}
 			}
-			else
-				this->_request_is_full[accept_socket] = true;
+			// else
+			// if (length)
+				// this->_request_is_full[accept_socket] = true;
 			if (this->_request_is_full[accept_socket] == true) {
+				std::cout << "TUT" << std::endl;
 				this->_request[accept_socket].parse(this->_read_buf[accept_socket]);
 				this->_read_buf.erase(accept_socket);
 			}
@@ -343,8 +347,11 @@ namespace third {
 		/*
 			Пропускаются все пробелы после "Transfer-Encoding:" и если там "chunked", то возвращается true
 		*/
-		pos = cmalt::skipspace(this->_read_buf[accept_socket], pos + 18);
+		std::cout << pos << std::endl;
+		pos += 18 + cmalt::skipspace(this->_read_buf[accept_socket], pos + 18);
+		std::cout << pos << std::endl;
 		std::string transfer = this->_read_buf[accept_socket].substr(pos, 7);
+		std::cout << transfer << std::endl;
 		return transfer == "chunked";
 	}
 

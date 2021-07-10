@@ -153,14 +153,26 @@ namespace third {
 	void	Node::start_node(std::string& path_to_config) {
 		this->_config.add(path_to_config);
 		std::vector<kyoko::ConfigServer>	vector_servers = this->_config.getConfigsServer();
-		for (std::vector<kyoko::ConfigServer>::iterator	iter = vector_servers.begin(); iter != vector_servers.end(); ++iter)
-			this->new_server(*iter);
+		for (std::vector<kyoko::ConfigServer>::iterator	iter = vector_servers.begin(); iter != vector_servers.end(); ++iter) {
+			try {
+				this->new_server(*iter);
+			}
+			catch (cmalt::BaseException &e) {
+				std::cerr << " " << e.what() << std::endl;
+			}
+		}
 	}
 
 	void	Node::start_node() {
 		std::vector<kyoko::ConfigServer>	vector_servers = this->_config.getConfigsServer();
-		for (std::vector<kyoko::ConfigServer>::iterator	iter = vector_servers.begin(); iter != vector_servers.end(); ++iter)
-			this->new_server(*iter);
+		for (std::vector<kyoko::ConfigServer>::iterator	iter = vector_servers.begin(); iter != vector_servers.end(); ++iter) {
+			try {
+				this->new_server(*iter);
+			}
+			catch (cmalt::BaseException &e) {
+				std::cerr << " " << e.what() << std::endl;
+			}
+		}
 	}
 
 	void	Node::run_node() {

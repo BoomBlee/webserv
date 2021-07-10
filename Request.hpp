@@ -27,6 +27,7 @@ public:
 	std::string															&getStatus();
 	kyoko::ConfigServer													&getConfig();
 	kyoko::ConfigLocation												&getLocation();
+	std::string															&getLocPath();
 
 	void																setStatus(std::string);
 	void																setCode(int);
@@ -44,6 +45,7 @@ private:
 	std::string															status;
 	kyoko::ConfigServer													conf;
 	kyoko::ConfigLocation												location;
+	std::string															locPath;
 private:
 	void																clear();
 	void																sort(std::list<std::pair<std::string, double> >::iterator, std::list<std::pair<std::string, double> >::iterator);

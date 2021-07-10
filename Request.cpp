@@ -39,6 +39,7 @@ Request	&Request::operator=(const Request &copy) {
 	this->status = copy.status;
 	this->conf = copy.conf;
 	this->location = copy.location;
+	this->locPath = copy.locPath;
 	return *this;
 }
 
@@ -62,6 +63,8 @@ void																Request::setConfig(kyoko::ConfigServer &conf) {
 
 void																Request::parse(std::string &str) {
 	this->clear();
+	if (str.find("\r\n\r\n") != std::string::npos)
+		std::cout << "YES" << std::endl;
 	try {
 		this->setHead(str);
 		this->setHeaders(str);
@@ -91,8 +94,8 @@ void																Request::parse(std::string &str) {
 
 void									Request::getNewLine(std::string &str) {
 	size_t	pos = str.find("\r\n", this->pos);
-	this->newLine = str.substr(this->pos, pos - this->pos);
-	this->pos = pos + 2;
+	this->newLine = (pos != std::string::npos) ? str.substr(this->pos, pos - this->pos) : std::string("");
+	this->pos = (pos != std::string::npos) ? pos + 2 : pos;
 	std::string::iterator it = this->newLine.begin();
 	for (; it != this->newLine.end(); ++it) {
 		if ((it == this->newLine.begin() && *it == ' ') || (*it != ' ' && std::isspace(*it))) {
@@ -159,6 +162,7 @@ void																Request::setFullPath() {
 			this->fullPath = it->second.getPath() + this->path.substr(beginSize);
 			lenEnd = endSize;
 			lenBegin = beginSize;
+			this->locPath = it->first;
 			this->location = it->second;
 		}
 	}
@@ -266,13 +270,16 @@ void																Request::setBody(std::string &str) {
 
 void																Request::chunkedBody(std::string &str) {
 	long	i = this->pos;
+	std::cout << "TUT1" << std::endl;
 	long	len = strtol(str.substr(i).c_str(), NULL, 16);
+	std::cout << "TUT2" << std::endl;
 	while (len != 0) {
 		i = str.find("\r\n", i) + 2;
 		this->body += str.substr(i, len);
 		i += len + 2;
 		len = strtol(&str.c_str()[i], NULL, 16);
 	}
+	std::cout << "TUT3" << std::endl;
 }
 
 std::string															&Request::getMethod() {
@@ -317,6 +324,10 @@ kyoko::ConfigServer													&Request::getConfig() {
 
 kyoko::ConfigLocation												&Request::getLocation() {
 	return this->location;
+}
+
+std::string															&Request::getLocPath() {
+	return this->locPath;
 }
 
 void																Request::setStatus(std::string newStatus) {

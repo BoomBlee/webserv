@@ -22,6 +22,7 @@ public:
 private:
 	kyoko::ConfigLocation				conf;
 	std::string							path;
+	std::string							fullPath;
 	std::string							type;
 	std::string							ask;
 	Request 							req;

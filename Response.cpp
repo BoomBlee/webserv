@@ -37,6 +37,7 @@ Response::~Response() {}
 Response	&Response::operator=(const Response &copy) {
 	this->ask = copy.ask;
 	this->path = copy.path;
+	this->fullPath = copy.fullPath;
 	this->type = copy.type;
 	this->conf = copy.conf;
 	this->headers = copy.headers;
@@ -70,6 +71,9 @@ void								Response::initialisation(Request &request) {
 		this->ask = this->askStatus() + this->askHeaders() + std::string("\r\n") + this->ask;
 	}
 	this->closeFile();
+	if (this->conf.getAutoindex())
+		std::cout << "TRUE" << std::endl;
+	std::cout << this->req.getFullPath() << std::endl;
 }
 
 void								Response::clear() {
@@ -86,6 +90,14 @@ void								Response::setConfig(kyoko::ConfigLocation &location) {
 
 void								Response::setPath(std::string &path) {
 	this->path = path;
+	this->fullPath = this->req.getFullPath();
+	if (this->stat(this->fullPath.c_str()) > 0 && this->path == this->req.getLocPath())
+		this->fullPath = this->conf.getPath() + "/" + this->conf.getIndex();
+	std::cout << this->fullPath << "|" << this->path << "|" << this->req.getLocPath() << "|" << std::endl;
+	// if (this->stat(this->path.c_str()) > 0)
+	// 	this->path = this->conf.getPath() + "/" + this->conf.getIndex();
+	// else
+	// 	this->path = path;
 }
 
 void								Response::setType(std::string &path) {
@@ -195,12 +207,12 @@ void								Response::methodGET() {
 	}
 	else {
 		try {
-			this->openFile(this->req.getFullPath(), std::fstream::in);
+			this->openFile(this->fullPath, std::fstream::in);
 			this->readFile();
 		}
 		catch (BaseException &e) {
-			if (this->conf.getAutoindex() && this->stat(this->req.getFullPath().c_str()) == 1)
-				this->ask = this->generateAutoindex(this->req.getFullPath().c_str());
+			if (this->conf.getAutoindex() && this->stat(this->fullPath.c_str()) == 1)
+				this->ask = this->generateAutoindex(this->fullPath.c_str());
 			else
 				throw e;
 		}
@@ -210,13 +222,13 @@ void								Response::methodGET() {
 }
 
 void								Response::methodPUT() {
-	if (this->stat(this->req.getFullPath().c_str()) == 0) {
-		this->openFile(this->req.getFullPath(), std::fstream::out);
+	if (this->stat(this->fullPath.c_str()) == 0) {
+		this->openFile(this->fullPath, std::fstream::out);
 		this->req.setCode(204);
 		this->req.setStatus("No Content");
 	}
 	else {
-		this->openFile(this->req.getFullPath(), std::fstream::out | std::fstream::trunc);
+		this->openFile(this->fullPath, std::fstream::out | std::fstream::trunc);
 		this->req.setCode(201);
 		this->req.setStatus("Created");
 	}
@@ -238,8 +250,8 @@ void								Response::methodPOST() {
 }
 
 void								Response::methodDELETE() {
-	if (this->stat(this->req.getFullPath().c_str()) == 0) {
-		if (remove(this->req.getFullPath().c_str()) == 0) {
+	if (this->stat(this->fullPath.c_str()) == 0) {
+		if (remove(this->fullPath.c_str()) == 0) {
 			this->req.setCode(204);
 			this->req.setStatus("No Content");
 		}
@@ -306,7 +318,7 @@ std::string							Response::generateAutoindex(const char *path) {
 std::string							Response::askStatus() {
 	std::string		status;
 
-	status = this->req.getVersion() + " " + std::to_string(this->req.getCode()) + " " + this->req.getStatus() + "\r\n";
+	status = "HTTP/1.1 " + std::to_string(this->req.getCode()) + " " + this->req.getStatus() + "\r\n";
 	return status;
 }
 
