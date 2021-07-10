@@ -6,12 +6,8 @@
 namespace cmalt {
 //================================================================================
 size_t	skipspace(std::string &str, size_t pos) {
-	std::cout << pos << std::endl;
 	std::string::iterator it = str.begin() + pos;
-	std::cout << it - str.begin() << std::endl;
 	for (; *it == ' '; ++it) {}
-	// std::string		str1(it, str.end());
-	std::cout << it - str.begin() << std::endl;
 	return it - str.begin() - pos;
 }
 
@@ -20,7 +16,6 @@ size_t	reverseskipspace(std::string &str, size_t pos) {
 	if (pos == std::string::npos)
 		it = str.end() - 1;
 	for (; *it == ' '; --it) {}
-	std::string		str1(str.begin() + pos, it);
 	if (pos == std::string::npos)
 		return (str.end() - 1) - it;
 	return pos - (it - str.begin());

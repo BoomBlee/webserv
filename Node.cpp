@@ -205,14 +205,17 @@ namespace third {
 					pool = true;
 					try {
 						iter->second->send(fd);
-						this->_recv_servers.erase(iter);
 					}
 					catch (cmalt::BaseException &e) {
-						std::cerr << e.what() << std::endl;
-						this->_recv_servers.erase(fd);
-						this->_accept_servers.erase(fd);
-						if (fd > 0)
-							close(fd);
+						if (e.getErrorNumber() == 0) {
+							std::cerr << e.what() << std::endl;
+							this->_recv_servers.erase(fd);
+							this->_accept_servers.erase(fd);
+							if (fd > 0)
+								close(fd);
+						}
+						else
+							this->_recv_servers.erase(iter);
 					}
 				}
 			}

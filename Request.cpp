@@ -63,8 +63,6 @@ void																Request::setConfig(kyoko::ConfigServer &conf) {
 
 void																Request::parse(std::string &str) {
 	this->clear();
-	if (str.find("\r\n\r\n") != std::string::npos)
-		std::cout << "YES" << std::endl;
 	try {
 		this->setHead(str);
 		this->setHeaders(str);
@@ -98,10 +96,8 @@ void									Request::getNewLine(std::string &str) {
 	this->pos = (pos != std::string::npos) ? pos + 2 : pos;
 	std::string::iterator it = this->newLine.begin();
 	for (; it != this->newLine.end(); ++it) {
-		if ((it == this->newLine.begin() && *it == ' ') || (*it != ' ' && std::isspace(*it))) {
-			std::cout << "|" << (int)*it << "|\n"  << std::endl;
+		if ((it == this->newLine.begin() && *it == ' ') || (*it != ' ' && std::isspace(*it)))
 			throw BaseException("Bad Request2", 400);
-		}
 	}
 	if (it != this->newLine.end())
 		throw BaseException("Bad Request1", 400);
@@ -270,16 +266,13 @@ void																Request::setBody(std::string &str) {
 
 void																Request::chunkedBody(std::string &str) {
 	long	i = this->pos;
-	std::cout << "TUT1" << std::endl;
 	long	len = strtol(str.substr(i).c_str(), NULL, 16);
-	std::cout << "TUT2" << std::endl;
 	while (len != 0) {
 		i = str.find("\r\n", i) + 2;
 		this->body += str.substr(i, len);
 		i += len + 2;
 		len = strtol(&str.c_str()[i], NULL, 16);
 	}
-	std::cout << "TUT3" << std::endl;
 }
 
 std::string															&Request::getMethod() {

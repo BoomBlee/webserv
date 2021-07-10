@@ -292,7 +292,6 @@ namespace third {
 				size_t	pos = this->_read_buf[accept_socket].find("Content-Length:");
 				if (pos == std::string::npos) {
 					pos = this->_read_buf[accept_socket].find("Transfer-Encoding:");
-					std::cout << "YES2" << std::endl;
 					if (pos != std::string::npos && length != std::string::npos && this->chunked_detect(pos, accept_socket)) {
 						if (this->_read_buf[accept_socket].find("0\r\n\r\n", length) + 5 == this->_read_buf[accept_socket].size()) {
 							this->_request_is_full[accept_socket] = true;
@@ -308,11 +307,7 @@ namespace third {
 						this->_request_is_full[accept_socket] = true;
 				}
 			}
-			// else
-			// if (length)
-				// this->_request_is_full[accept_socket] = true;
 			if (this->_request_is_full[accept_socket] == true) {
-				std::cout << "TUT" << std::endl;
 				this->_request[accept_socket].parse(this->_read_buf[accept_socket]);
 				this->_read_buf.erase(accept_socket);
 			}
@@ -324,15 +319,24 @@ namespace third {
 	*/
 	void	Server::send(long& accept_socket) {
 		this->_response[accept_socket].initialisation(this->_request[accept_socket]);
-		if (this->_response[accept_socket].getAsk().size() > 1000)
+		std::string	str = this->_response[accept_socket].getAsk();
+		if (str.size() > TCP_SIZE) {
+			this->_response[accept_socket].setAsk(str.substr(TCP_SIZE));
+			str = str.substr(0, TCP_SIZE);
+		}
+		else
+			this->_response[accept_socket].setAsk(std::string(""));
+		if (str.size() > 1000)
 			std::cout << "\rResponse:\n{======================\n" << this->_response[accept_socket].getAsk().substr(0, 1000) << "\n}==================" << std::endl;
 		else
 			std::cout << "\rResponse:\n{======================\n" << this->_response[accept_socket].getAsk() << "\n}==================" << std::endl;
-		size_t	ret = ::send(accept_socket, this->_response[accept_socket].getAsk().c_str(), this->_response[accept_socket].getAsk().size(), 0);
+		size_t	ret = ::send(accept_socket, str.c_str(), str.size(), 0);
 		if (ret < 0) {
 			close(accept_socket);
 			throw cmalt::BaseException("\rSend error, closing connection", 0);
 		}
+		if (this->_response[accept_socket].getAsk().size() == 0)
+			throw cmalt::BaseException("\rSend full ask", 1);
 	}
 
 	/*
@@ -347,11 +351,8 @@ namespace third {
 		/*
 			Пропускаются все пробелы после "Transfer-Encoding:" и если там "chunked", то возвращается true
 		*/
-		std::cout << pos << std::endl;
 		pos += 18 + cmalt::skipspace(this->_read_buf[accept_socket], pos + 18);
-		std::cout << pos << std::endl;
 		std::string transfer = this->_read_buf[accept_socket].substr(pos, 7);
-		std::cout << transfer << std::endl;
 		return transfer == "chunked";
 	}
 

@@ -19,6 +19,7 @@ public:
 	std::string							&getAsk();
 	Request								&getRequest();
 	std::map<std::string, std::string>	&getHeaders();
+	void								setAsk(std::string);
 private:
 	kyoko::ConfigLocation				conf;
 	std::string							path;

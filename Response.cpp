@@ -71,9 +71,6 @@ void								Response::initialisation(Request &request) {
 		this->ask = this->askStatus() + this->askHeaders() + std::string("\r\n") + this->ask;
 	}
 	this->closeFile();
-	if (this->conf.getAutoindex())
-		std::cout << "TRUE" << std::endl;
-	std::cout << this->req.getFullPath() << std::endl;
 }
 
 void								Response::clear() {
@@ -93,11 +90,6 @@ void								Response::setPath(std::string &path) {
 	this->fullPath = this->req.getFullPath();
 	if (this->stat(this->fullPath.c_str()) == 1)
 		this->fullPath += "/" + this->conf.getIndex();
-	std::cout << this->fullPath << "|" << this->path << "|" << this->req.getLocPath() << "|" << std::endl;
-	// if (this->stat(this->path.c_str()) > 0)
-	// 	this->path = this->conf.getPath() + "/" + this->conf.getIndex();
-	// else
-	// 	this->path = path;
 }
 
 void								Response::setType(std::string &path) {
@@ -265,9 +257,9 @@ void								Response::methodDELETE() {
 }
 
 void								Response::cgi() {
-	this->ask = ::cgi.execCGI(this->req);
 	size_t	pos = 0;
 	size_t	end = this->ask.size() - 2;
+	this->ask = ::cgi.execCGI(this->req);
 	while (this->ask.find("\r\n\r\n", pos) != std::string::npos || this->ask.find("\r\n", pos) == pos) {
 		if (this->ask.find("Status: ", pos) == pos) {
 			this->req.setCode(std::atoi(this->ask.substr(pos + 8, 3).c_str()));
@@ -357,6 +349,10 @@ Request								&Response::getRequest() {
 
 std::map<std::string, std::string>	&Response::getHeaders() {
 	return this->headers;
+}
+
+void								Response::setAsk(std::string str) {
+	this->ask = str;
 }
 
 //================================================================================
