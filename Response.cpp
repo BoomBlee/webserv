@@ -91,8 +91,8 @@ void								Response::setConfig(kyoko::ConfigLocation &location) {
 void								Response::setPath(std::string &path) {
 	this->path = path;
 	this->fullPath = this->req.getFullPath();
-	if (this->stat(this->fullPath.c_str()) > 0 && this->path == this->req.getLocPath())
-		this->fullPath = this->conf.getPath() + "/" + this->conf.getIndex();
+	if (this->stat(this->fullPath.c_str()) == 1)
+		this->fullPath += "/" + this->conf.getIndex();
 	std::cout << this->fullPath << "|" << this->path << "|" << this->req.getLocPath() << "|" << std::endl;
 	// if (this->stat(this->path.c_str()) > 0)
 	// 	this->path = this->conf.getPath() + "/" + this->conf.getIndex();

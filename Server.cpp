@@ -294,7 +294,7 @@ namespace third {
 					pos = this->_read_buf[accept_socket].find("Transfer-Encoding:");
 					std::cout << "YES2" << std::endl;
 					if (pos != std::string::npos && length != std::string::npos && this->chunked_detect(pos, accept_socket)) {
-						if (this->_read_buf[accept_socket].find("0\r\n", length) + 3 == this->_read_buf[accept_socket].size()) {
+						if (this->_read_buf[accept_socket].find("0\r\n\r\n", length) + 5 == this->_read_buf[accept_socket].size()) {
 							this->_request_is_full[accept_socket] = true;
 						}
 					}
