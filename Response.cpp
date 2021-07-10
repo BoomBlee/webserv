@@ -108,11 +108,11 @@ void								Response::setType(std::string &path) {
 void								Response::setHeaders() {
 	if (this->req.getCode() == 405)
 		this->setAllow();
-	if (this->ask.size() != 0 || this->conf.getCgiPath() != "") {
-		this->headers["Content-Length"] = std::to_string(this->ask.size());
-		this->headers["Content-Type"] = this->type;
-		this->headers["Content-Location"] = this->path;
-	}
+	// if (this->ask.size() != 0 || this->conf.getCgiPath() != "") {
+	this->headers["Content-Length"] = std::to_string(this->ask.size());
+	this->headers["Content-Type"] = this->type;
+	this->headers["Content-Location"] = this->path;
+	// }
 	this->headers["Location"] = this->path;
 	this->headers["Server"] = std::string("WebServ/1.1");
 	this->headers["Date"] = this->getDate();
