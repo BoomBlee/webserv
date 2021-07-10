@@ -328,9 +328,9 @@ namespace third {
 		else
 			this->_response[accept_socket].setAsk(std::string(""));
 		if (str.size() > 1000)
-			std::cout << "\rResponse:\n{======================\n" << this->_response[accept_socket].getAsk().substr(0, 1000) << "\n}==================" << std::endl;
+			std::cout << "\rResponse:\n{======================\n" << str.substr(0, 1000) << "\n}==================" << std::endl;
 		else
-			std::cout << "\rResponse:\n{======================\n" << this->_response[accept_socket].getAsk() << "\n}==================" << std::endl;
+			std::cout << "\rResponse:\n{======================\n" << str << "\n}==================" << std::endl;
 		size_t	ret = ::send(accept_socket, str.c_str(), str.size(), 0);
 		std::cout << ret << "|" << str.size() << "|"  << this->_response[accept_socket].getAsk().size() << std::endl;
 		if (ret < 0) {

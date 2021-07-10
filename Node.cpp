@@ -191,6 +191,7 @@ namespace third {
 			while (pool) {
 				std::cout << "\rWaiting on a connection" << std::flush;
 				int ret = poll(poll_fds, sockets_size, 10000000);
+				std::cout << RED << ret << RESET << std::endl;
 				if (ret < 0)
 					this->poll_error(sockets_size, poll_fds, num_fds);
 				if (ret > 0)
