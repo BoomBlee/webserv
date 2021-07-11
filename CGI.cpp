@@ -78,10 +78,10 @@ void					CGI::clear() {
 
 void				CGI::setCGI(cmalt::Request &req) {
 	this->ret = req.getBody();
-	std::cout << BLUE << req.getRzhanoiHleb().size() << RESET << std::endl;
+	// std::cout << BLUE << req.getRzhanoiHleb().size() << RESET << std::endl;
 	for (std::map<std::string, std::string>::iterator it = req.getRzhanoiHleb().begin(); it != req.getRzhanoiHleb().end(); ++it) {
 		this->cgiEnv[it->first] = it->second;
-		std::cout << YELLOW << it->first << " " << it->second << RESET << std::endl;
+		// std::cout << YELLOW << it->first << " " << it->second << RESET << std::endl;
 	}
 	this->cgiEnv["SCRIPT_NAME"] = req.getLocation().getCgiPath();
 	this->cgiEnv["SCRIPT_FILENAME"] = req.getLocation().getCgiPath();
@@ -127,7 +127,7 @@ void				CGI::mapToChar(char ***env) {
 		std::string	newEnv = it->first + "=" + it->second;
 		(*env)[i] = new char[newEnv.size() + 1];
 		std::strcpy((*env)[i], newEnv.c_str());
-		std::cout << (*env)[i] << std::endl;
+		// std::cout << (*env)[i] << std::endl;
 		i++;
 	}
 	(*env)[i] = NULL;

@@ -283,10 +283,10 @@ namespace third {
 				throw cmalt::BaseException("\rRead error, closing connection", 0);
 			}
 			this->_read_buf[accept_socket] += std::string(buf);
-			if (this->_read_buf[accept_socket].size() > 1000)
-				std::cout << "\rRequest:\n{======================\n" << this->_read_buf[accept_socket].substr(0, 1000) << "\n}==================" << std::endl;
-			else
-				std::cout << "\rRequest:\n{======================\n" << this->_read_buf[accept_socket] << "\n}==================" << std::endl;
+			// if (this->_read_buf[accept_socket].size() > 1000)
+			// 	std::cout << "\rRequest:\n{======================\n" << this->_read_buf[accept_socket].substr(0, 1000) << "\n}==================" << std::endl;
+			// else
+			// 	std::cout << "\rRequest:\n{======================\n" << this->_read_buf[accept_socket] << "\n}==================" << std::endl;
 			size_t	length = this->_read_buf[accept_socket].find("\r\n\r\n");
 			if (length != std::string::npos) {
 				size_t	pos = this->_read_buf[accept_socket].find("Content-Length:");
@@ -327,12 +327,12 @@ namespace third {
 		}
 		else
 			this->_response[accept_socket].setAsk(std::string(""));
-		if (str.size() > 1000)
-			std::cout << "\rResponse:\n{======================\n" << str.substr(0, 1000) << "\n}==================" << std::endl;
-		else
-			std::cout << "\rResponse:\n{======================\n" << str << "\n}==================" << std::endl;
+		// if (str.size() > 1000)
+		// 	std::cout << "\rResponse:\n{======================\n" << str.substr(0, 1000) << "\n}==================" << std::endl;
+		// else
+		// 	std::cout << "\rResponse:\n{======================\n" << str << "\n}==================" << std::endl;
 		size_t	ret = ::send(accept_socket, str.c_str(), str.size(), 0);
-		std::cout << ret << "|" << str.size() << "|"  << this->_response[accept_socket].getAsk().size() << std::endl;
+		// std::cout << ret << "|" << str.size() << "|"  << this->_response[accept_socket].getAsk().size() << std::endl;
 		if (ret < 0) {
 			close(accept_socket);
 			throw cmalt::BaseException("\rSend error, closing connection", 0);

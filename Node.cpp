@@ -177,7 +177,7 @@ namespace third {
 
 	void	Node::run_node() {
 		int		sockets_size = this->_listen_servers.size();
-		struct	pollfd	poll_fds[sockets_size * 2];
+		struct	pollfd	poll_fds[sockets_size * 1001];
 		std::map<long, int>	num_fds;
 		int	count = 0;
 		for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
@@ -189,16 +189,16 @@ namespace third {
 		while (true) {
 			bool	pool = true;
 			while (pool) {
-				// std::cout << "\rWaiting on a connection" << std::flush;
-				int ret = poll(poll_fds, sockets_size, 10000000);
+				int ret = poll(poll_fds, sockets_size, 10000);
+				// std::cout << "\rWaiting on a connection;" << GREEN << "Ret:" << ret << ";Listen:" << this->_listen_servers.size() << ";Recv:" << this->_accept_servers.size() << ";Send:" << this->_recv_servers.size() << RESET << std::flush;
 				// std::cout << RED << ret << RESET << std::endl;
 				if (ret < 0)
 					this->poll_error(sockets_size, poll_fds, num_fds);
 				if (ret > 0)
 					pool = false;
 			}
-
-			for (std::map<long, Server*>::iterator iter = this->_recv_servers.begin(); iter != this->_recv_servers.end() && !pool; ++iter) {
+			std::map<long, Server*>::iterator iter;
+			for (iter = this->_recv_servers.begin(); iter != this->_recv_servers.end() && !pool; ++iter) {
 				int	num = num_fds[iter->first];
 				if (poll_fds[num].revents & POLLOUT) {
 					long	fd = iter->first;
@@ -206,6 +206,7 @@ namespace third {
 					pool = true;
 					this->_accept_servers.erase(fd);
 					try {
+						// std::cout << CIAN << "Response:" << fd << RESET << std::endl;
 						iter->second->send(fd);
 					}
 					catch (cmalt::BaseException &e) {
@@ -219,21 +220,24 @@ namespace third {
 						else {
 							this->_accept_servers[fd] = iter->second;
 							this->_recv_servers.erase(fd);
+							std::cout << CIAN << "Response-full:" << fd << RESET << std::endl;
 						}
 					}
 					break;
 				}
 			}
 
-			for (std::map<long, Server*>::iterator iter = this->_accept_servers.begin(); !pool && iter != this->_accept_servers.end(); ++iter) {
+			for (iter = this->_accept_servers.begin(); !pool && iter != this->_accept_servers.end(); ++iter) {
 				int num = num_fds[iter->first];
 				if (poll_fds[num].revents & POLLIN) {
 					long	fd = iter->first;
 					poll_fds[num].revents = 0;
 					pool = true;
 					try {
+						// std::cout << CIAN << "Request:" << fd << RESET << std::endl;
 						iter->second->recv(fd);
 						if (iter->second->get_request_is_full(fd)) {
+							std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;
 							this->_recv_servers[iter->first] = iter->second;
 							iter->second->set_request_is_full(false, fd);
 						}
