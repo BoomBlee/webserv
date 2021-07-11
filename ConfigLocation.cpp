@@ -2,6 +2,7 @@
 
 namespace kyoko {
 ConfigLocation::ConfigLocation() : _autoindex(false), _body_size(0) {};
+ConfigLocation::ConfigLocation(const ConfigLocation &copy) {*this = copy;};
 ConfigLocation::~ConfigLocation() {};
 bool& ConfigLocation::getAutoindex() {return _autoindex;}
 std::string& ConfigLocation::getPath() {return _path;};

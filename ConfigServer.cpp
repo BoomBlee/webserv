@@ -2,6 +2,7 @@
 
 namespace kyoko {
 ConfigServer::ConfigServer() {}
+ConfigServer::ConfigServer(const ConfigServer &copy) {*this = copy;}
 ConfigServer::~ConfigServer() {};
 std::map<std::string, ConfigLocation>& ConfigServer::getLocations() {return _locations;};
 int& ConfigServer::getHost() {return _host;};

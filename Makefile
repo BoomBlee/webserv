@@ -6,13 +6,17 @@ CC = clang++
 
 FILE = \
 BaseException \
+CGI \
 ConfigLocation \
 ConfigServer \
 ConfigServers \
+ConstantParametrs \
 ConstatsParametrs \
+Node \
 Request \
 Response \
 Server
+
 
 TOOLS = \
 tools \
