@@ -1,4 +1,4 @@
-#pragma one
+#pragma once
 
 #include <algorithm>
 // #include <asm-generic/socket.h>
@@ -23,6 +23,7 @@
 #include <arpa/inet.h>
 #include <poll.h>
 #include <stdlib.h>
+#pragma once
 #include <map>
 #include <list>
 #include <utility>

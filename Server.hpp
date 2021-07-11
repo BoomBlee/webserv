@@ -1,3 +1,4 @@
+#pragma once
 #include "Response.hpp"
 #include <cstddef>
 #include <map>

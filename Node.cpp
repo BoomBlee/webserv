@@ -152,7 +152,7 @@ namespace third {
 
 	void	Node::start_node(std::string& path_to_config) {
 		this->_config.add(path_to_config);
-		std::vector<kyoko::ConfigServer>	vector_servers = this->_config.getConfigsServer();
+		std::vector<kyoko::ConfigServer>	vector_servers = this->_config.getConfigServer();
 		for (std::vector<kyoko::ConfigServer>::iterator	iter = vector_servers.begin(); iter != vector_servers.end(); ++iter) {
 			try {
 				this->new_server(*iter);
@@ -164,7 +164,7 @@ namespace third {
 	}
 
 	void	Node::start_node() {
-		std::vector<kyoko::ConfigServer>	vector_servers = this->_config.getConfigsServer();
+		std::vector<kyoko::ConfigServer>	vector_servers = this->_config.getConfigServer();
 		for (std::vector<kyoko::ConfigServer>::iterator	iter = vector_servers.begin(); iter != vector_servers.end(); ++iter) {
 			try {
 				this->new_server(*iter);

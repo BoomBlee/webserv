@@ -9,12 +9,21 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/a.out",
+<<<<<<< HEAD
 			"args": ["example.conf"],
+=======
+			"args": [],
+>>>>>>> test
 			"stopAtEntry": false,
 			"cwd": "${fileDirname}",
 			"environment": [],
 			"externalConsole": false,
 			"MIMode": "lldb"
 		}
+<<<<<<< HEAD
+=======
+		
+
+>>>>>>> test
 	]
 }

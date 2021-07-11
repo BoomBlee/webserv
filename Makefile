@@ -1,47 +1,56 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Makefile                                           :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: cmalt <cmalt@student.21-school.ru>         +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2021/01/19 07:17:49 by cmalt             #+#    #+#              #
-#    Updated: 2021/01/19 10:59:06 by cmalt            ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
+NAME = webserv
 
-NAME =	a.out
+CFLAGS = #-Wall -Wextra -Werror
 
-CLANG =	clang++
+CC = clang++
 
-SRC =	BaseException.cpp \
-		CGI.cpp \
-		ConstantParametrs.cpp \
-		Node.cpp \
-		Request.cpp \
-		Response.cpp \
-		Server.cpp \
-		tools.cpp \
-		webserv.cpp
+FILE = \
+BaseException \
+ConfigLocation \
+ConfigServer \
+ConfigServers \
+ConstatsParametrs \
+Request \
+Response \
+Server
 
-OBJ =	$(SRC:.cpp=.o)
+TOOLS = \
+tools \
+webserv
 
-HEAD =	.
+HEADERS = $(addsuffix .hpp,$(FILE)) \
+color.hpp \
+headers.hpp
 
-all: $(NAME)
+SRCS = $(addsuffix .cpp,$(FILE)) \
+$(addsuffix .cpp,$(TOOLS))
 
-%.o: %.cpp
-	$(CLANG) -I $(HEAD) -c $< -o $@
+BIN_DIR = Obj/
+BINS_FILE = $(addsuffix .o,$(FILE)) \
+$(addsuffix .o,$(TOOLS))
+BINS = $(addprefix $(BIN_DIR), $(BINS_FILE))
+BINS_TEMP = $(addprefix $(BIN_DIR), %.o)
 
-$(NAME): $(OBJ)
-	$(CLANG) $^ -g
+all: $(BIN_DIR) $(NAME) $(HEADERS) $(SRCS) 
+
+$(NAME): $(BINS)
+	@$(CC) $(CFLAGS) $(BINS) -o $(NAME)
+	@echo "\033[1;32m$(NAME) created\033[0m"
+
+$(BINS_TEMP): %.cpp $(HEADERS)
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+$(BIN_DIR):
+	@mkdir $(BIN_DIR)
 
 clean:
-	rm -f $(OBJ)
+	@rm -rf $(BIN_DIR)
+	@echo "\033[1;33mclean completed\033[0m"
 
 fclean: clean
-	rm -f $(NAME)
+	@rm -rf $(NAME)
+	@echo "\033[1;31mfclean completed\033[0m"
 
 re: fclean all
 
-.PHONY: re clean fclean all
+.PHONY: all clean fclean re

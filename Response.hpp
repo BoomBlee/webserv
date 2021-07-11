@@ -1,3 +1,4 @@
+#pragma once
 #include "CGI.hpp"
 #include <map>
 #include <string>
