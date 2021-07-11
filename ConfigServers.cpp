@@ -227,12 +227,7 @@ void	ConfigServers::add(std::string fileName) {
 			getline (file,str);
 			trim(str);
 			if (str.find("server", 0, 6) != std::string::npos && (!str[6] || isspace(str[6]))) {
-				try {
-					this->_serv.push_back(_parse_server(file, str));
-				}
-				catch (const std::exception& e) {
-					std::cerr << RED << e.what() << RESET << std::endl;
-				}
+				this->_serv.push_back(_parse_server(file, str));
 			}
 		}
 		file.close();
