@@ -1,6 +1,6 @@
 #pragma once
 #include "ConstantParametrs.hpp"
-#include <cstddef>
+// #include <cstddef>
 
 //================================================================================
 namespace kyoko {

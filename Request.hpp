@@ -28,6 +28,7 @@ public:
 	kyoko::ConfigServer													&getConfig();
 	kyoko::ConfigLocation												&getLocation();
 	std::string															&getLocPath();
+	bool																getConnection();
 	
 	std::map<std::string, std::string>									&getRzhanoiHleb();
 
@@ -48,6 +49,7 @@ private:
 	kyoko::ConfigServer													conf;
 	kyoko::ConfigLocation												location;
 	std::string															locPath;
+	bool																connect;
 
 
 	std::map<std::string, std::string>									rzhanoiHleb;

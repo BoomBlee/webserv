@@ -116,6 +116,7 @@ void								Response::setHeaders() {
 	this->headers["Location"] = this->path;
 	this->headers["Server"] = std::string("WebServ/1.1");
 	this->headers["Date"] = this->getDate();
+	this->headers["Connection"] = this->req.getConnection() ? "keep-alive" : "close";
 }
 
 void								Response::setAllow() {

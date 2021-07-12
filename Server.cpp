@@ -334,9 +334,11 @@ namespace third {
 		size_t	ret = ::send(accept_socket, str.c_str(), str.size(), 0);
 		// std::cout << ret << "|" << str.size() << "|"  << this->_response[accept_socket].getAsk().size() << std::endl;
 		if (ret < 0) {
-			close(accept_socket);
+			// close(accept_socket);
 			throw cmalt::BaseException("\rSend error, closing connection", 0);
 		}
+		if (!this->_request[accept_socket].getConnection())
+			throw cmalt::BaseException("\rConnection closed", 0);
 		if (this->_response[accept_socket].getAsk().size() == 0)
 			throw cmalt::BaseException("\rSend full ask", 1);
 	}
