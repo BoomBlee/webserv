@@ -181,65 +181,87 @@ namespace third {
 		// std::map<long, int>	num_fds;
 		// int	count = 0;
 
+		bool pool = true;
+
 		fd_set fd_read;
 		fd_set fd_write;
-		fd_set fd_master;
-		int max_fd = this->_listen_servers.size() + 2;
+		fd_set fd_read_zero;
+		fd_set fd_write_zero;
+		int max_fd = 0;
 
 		struct timeval tv;
 		tv.tv_sec = 10;
 		tv.tv_usec = 0;
 
-		struct sockaddr_storage their_addr;
-		socklen_t addr_size;
-		struct addrinfo hints, *res;
+		FD_ZERO(&fd_read_zero);
+		FD_ZERO(&fd_write_zero);
 
 		for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
-			FD_SET(iter->first, &fd_read);
-			FD_SET(iter->first, &fd_write);
+			// FD_SET(iter->first, &fd_read);
+			// FD_SET(iter->first, &fd_write);
+			max_fd = iter->first > max_fd ? iter->first : max_fd;
+			std::cout << iter->first << std::endl;
+			int fd = iter->first;
+			FD_SET(fd, &fd_read_zero);
 		}
-
+	
 		for(;;) {
-			FD_COPY(&fd_master, &fd_read);
-			FD_ZERO(&fd_read);
-			FD_ZERO(&fd_write);
-
-			int ret = select(max_fd + 1, &fd_read, &fd_write, 0, &tv);
-			if (ret == -1) {
-				// fail
-			}
-			else if (ret == 0) {
-				// timeOut
+			while (pool) {
+				// FD_ZERO(&fd_read);
+				// FD_ZERO(&fd_write);
+				memset(&fd_read, 0, sizeof(fd_read));
+				memset(&fd_write, 0, sizeof(fd_write));
+				// FD_COPY(&fd_read_zero, &fd_read);
+				// FD_COPY(&fd_write_zero, &fd_write);
+				memcpy(&fd_read, &fd_read_zero, sizeof(fd_read_zero));
+				memcpy(&fd_write, &fd_write_zero, sizeof(fd_write_zero));
+				int ret = select(max_fd + 1, &fd_read, &fd_write, 0, &tv);
+				if (ret == -1) {
+					// fail
+				}
+				else if (ret == 0) {
+					// timeOut
+				}
+				else {
+					// std::cout << ret << std::endl;
+					pool = false;
+				}
+				// std::cout << std::boolalpha << pool << std::endl;
 			}
 
 			std::map<long, Server*>::iterator iter;
-			for (iter = this->_accept_servers.begin();iter != this->_accept_servers.end(); ++iter) {
+			for (iter = this->_accept_servers.begin(); !pool && iter != this->_accept_servers.end(); ++iter) {
 				if (FD_ISSET(iter->first, &fd_read)) {
 					long	fd = iter->first;
+					pool = true;
 					try {
 						// std::cout << CIAN << "Request:" << fd << RESET << std::endl;
 						iter->second->recv(fd);
 						if (iter->second->get_request_is_full(fd)) {
-							std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;
+							// std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;
 							this->_recv_servers[iter->first] = iter->second;
 							iter->second->set_request_is_full(false, fd);
+							FD_SET(fd, &fd_write_zero);
 						}
 					}
 					catch (cmalt::BaseException &e) {
 						std::cerr << e.what() << std::endl;
 						this->_accept_servers.erase(fd);
+						FD_CLR(fd, &fd_write_zero);
+						FD_CLR(fd, &fd_read_zero);
 						if (fd > 0)
 							close(fd);
 					}
-					std::cout << YELLOW << "Request" << RESET << std::endl;
+					// std::cout << YELLOW << "Request" << RESET << std::endl;
 					break;
 				}
 			}
 
-			for (iter = this->_recv_servers.begin(); iter != this->_recv_servers.end(); ++iter) {
+			for (iter = this->_recv_servers.begin(); !pool &&  iter != this->_recv_servers.end(); ++iter) {
 				if (FD_ISSET(iter->first, &fd_write)) {
 					long	fd = iter->first;
 					this->_accept_servers.erase(fd);
+					pool = true;
 					try {
 						// std::cout << CIAN << "Response:" << fd << RESET << std::endl;
 						iter->second->send(fd);
@@ -249,35 +271,39 @@ namespace third {
 							std::cerr << e.what() << std::endl;
 							this->_recv_servers.erase(fd);
 							this->_accept_servers.erase(fd);
+							FD_CLR(fd, &fd_write_zero);
+							FD_CLR(fd, &fd_read_zero);
 							if (fd > 0)
 								close(fd);
 						}
 						else {
 							this->_accept_servers[fd] = iter->second;
 							this->_recv_servers.erase(fd);
-							std::cout << CIAN << "Response-full:" << fd << RESET << std::endl;
+							// std::cout << CIAN << "Response-full:" << fd << RESET << std::endl;
 						}
 					}
-					std::cout << RED << "Response" << RESET << std::endl;
+					// std::cout << RED << "Response" << RESET << std::endl;
 					break;
 				}
 			}
 	
-			for (std::map<long, Server>::iterator it = this->_listen_servers.begin(); it != this->_listen_servers.end(); ++it) {
-				if (FD_ISSET(iter->first, &fd_read)) {
+			for (std::map<long, Server>::iterator it = this->_listen_servers.begin(); !pool &&  it != this->_listen_servers.end(); ++it) {
+				long fd = it->first;
+				if (FD_ISSET(fd, &fd_read)) {
+					pool = true;
 					try {
 						long fd = it->second.accept();
-						++max_fd;
 						this->_accept_servers[fd] = &it->second;
+						max_fd = fd > max_fd ? fd : max_fd;
+						FD_SET(fd, &fd_read_zero);
 					}
 					catch (cmalt::BaseException &e) {
 						std::cerr << e.what() << std::endl;
 					}
-					std::cout << GREEN << "Accept" << RESET << std::endl;
 					break;
 				}
 			}
-
+			pool = true;
 		}
 
 		// for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
@@ -371,7 +397,7 @@ namespace third {
 		// 			break;
 		// 		}
 		// 	}
-		// 	pool = true;
+			// pool = true; 
 		// }
 	}
 
