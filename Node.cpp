@@ -183,40 +183,62 @@ namespace third {
 
 		fd_set fd_read;
 		fd_set fd_write;
+		fd_set fd_master;
 		int max_fd = this->_listen_servers.size() + 2;
-		struct timeval tv;
 
-		FD_ZERO(&fd_read);
-		FD_ZERO(&fd_write);
+		struct timeval tv;
+		tv.tv_sec = 10;
+		tv.tv_usec = 0;
+
+		struct sockaddr_storage their_addr;
+		socklen_t addr_size;
+		struct addrinfo hints, *res;
 
 		for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
 			FD_SET(iter->first, &fd_read);
+			FD_SET(iter->first, &fd_write);
 		}
 
-		// for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
-		// 	poll_fds[count].fd = iter->first;
-		// 	poll_fds[count].events = POLLIN;
-		// 	num_fds[iter->first] = count;
-		// 	++count;
-		// }
-		while (true) {
-			bool	pool = true;
-			while (pool) {
-				int ret = poll(poll_fds, sockets_size, 10000);
-				// std::cout << "\rWaiting on a connection;" << GREEN << "Ret:" << ret << ";Listen:" << this->_listen_servers.size() << ";Recv:" << this->_accept_servers.size() << ";Send:" << this->_recv_servers.size() << RESET << std::flush;
-				// std::cout << RED << ret << RESET << std::endl;
-				if (ret < 0)
-					this->poll_error(sockets_size, poll_fds, num_fds);
-				if (ret > 0)
-					pool = false;
+		for(;;) {
+			FD_COPY(&fd_master, &fd_read);
+			FD_ZERO(&fd_read);
+			FD_ZERO(&fd_write);
+
+			int ret = select(max_fd + 1, &fd_read, &fd_write, 0, &tv);
+			if (ret == -1) {
+				// fail
 			}
+			else if (ret == 0) {
+				// timeOut
+			}
+
 			std::map<long, Server*>::iterator iter;
-			for (iter = this->_recv_servers.begin(); iter != this->_recv_servers.end() && !pool; ++iter) {
-				int	num = num_fds[iter->first];
-				if (poll_fds[num].revents & POLLOUT) {
+			for (iter = this->_accept_servers.begin();iter != this->_accept_servers.end(); ++iter) {
+				if (FD_ISSET(iter->first, &fd_read)) {
 					long	fd = iter->first;
-					poll_fds[num].revents = 0;
-					pool = true;
+					try {
+						// std::cout << CIAN << "Request:" << fd << RESET << std::endl;
+						iter->second->recv(fd);
+						if (iter->second->get_request_is_full(fd)) {
+							std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;
+							this->_recv_servers[iter->first] = iter->second;
+							iter->second->set_request_is_full(false, fd);
+						}
+					}
+					catch (cmalt::BaseException &e) {
+						std::cerr << e.what() << std::endl;
+						this->_accept_servers.erase(fd);
+						if (fd > 0)
+							close(fd);
+					}
+					std::cout << YELLOW << "Request" << RESET << std::endl;
+					break;
+				}
+			}
+
+			for (iter = this->_recv_servers.begin(); iter != this->_recv_servers.end(); ++iter) {
+				if (FD_ISSET(iter->first, &fd_write)) {
+					long	fd = iter->first;
 					this->_accept_servers.erase(fd);
 					try {
 						// std::cout << CIAN << "Response:" << fd << RESET << std::endl;
@@ -236,56 +258,121 @@ namespace third {
 							std::cout << CIAN << "Response-full:" << fd << RESET << std::endl;
 						}
 					}
+					std::cout << RED << "Response" << RESET << std::endl;
 					break;
 				}
 			}
-
-			for (iter = this->_accept_servers.begin(); !pool && iter != this->_accept_servers.end(); ++iter) {
-				int num = num_fds[iter->first];
-				if (poll_fds[num].revents & POLLIN) {
-					long	fd = iter->first;
-					poll_fds[num].revents = 0;
-					pool = true;
-					try {
-						// std::cout << CIAN << "Request:" << fd << RESET << std::endl;
-						iter->second->recv(fd);
-						if (iter->second->get_request_is_full(fd)) {
-							std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;
-							this->_recv_servers[iter->first] = iter->second;
-							iter->second->set_request_is_full(false, fd);
-						}
-					}
-					catch (cmalt::BaseException &e) {
-						std::cerr << e.what() << std::endl;
-						this->_accept_servers.erase(fd);
-						if (fd > 0)
-							close(fd);
-					}
-					break;
-				}
-			}
-
-			for (std::map<long, Server>::iterator it = this->_listen_servers.begin(); pool == false && it != this->_listen_servers.end(); ++it) {
-				int num = num_fds[it->first];
-				if (poll_fds[num].revents & POLLIN) {
-					poll_fds[num].revents = 0;
-					pool = true;
+	
+			for (std::map<long, Server>::iterator it = this->_listen_servers.begin(); it != this->_listen_servers.end(); ++it) {
+				if (FD_ISSET(iter->first, &fd_read)) {
 					try {
 						long fd = it->second.accept();
-						poll_fds[sockets_size].fd = fd;
-						poll_fds[sockets_size].events = POLLIN | POLLOUT;
-						num_fds[fd] = sockets_size;
-						sockets_size++;
+						++max_fd;
 						this->_accept_servers[fd] = &it->second;
 					}
 					catch (cmalt::BaseException &e) {
 						std::cerr << e.what() << std::endl;
 					}
+					std::cout << GREEN << "Accept" << RESET << std::endl;
 					break;
 				}
 			}
-			pool = true;
+
 		}
+
+		// for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
+		// 	poll_fds[count].fd = iter->first;
+		// 	poll_fds[count].events = POLLIN;
+		// 	num_fds[iter->first] = count;
+		// 	++count;
+		// }
+		// while (true) {
+		// 	bool	pool = true;
+		// 	while (pool) {
+		// 		int ret = poll(poll_fds, sockets_size, 10000);
+		// 		// std::cout << "\rWaiting on a connection;" << GREEN << "Ret:" << ret << ";Listen:" << this->_listen_servers.size() << ";Recv:" << this->_accept_servers.size() << ";Send:" << this->_recv_servers.size() << RESET << std::flush;
+		// 		// std::cout << RED << ret << RESET << std::endl;
+		// 		if (ret < 0)
+		// 			this->poll_error(sockets_size, poll_fds, num_fds);
+		// 		if (ret > 0)
+		// 			pool = false;
+		// 	}
+		// 	std::map<long, Server*>::iterator iter;
+		// 	for (iter = this->_recv_servers.begin(); iter != this->_recv_servers.end() && !pool; ++iter) {
+		// 		int	num = num_fds[iter->first];
+		// 		if (poll_fds[num].revents & POLLOUT) {
+		// 			long	fd = iter->first;
+		// 			poll_fds[num].revents = 0;
+		// 			pool = true;
+		// 			this->_accept_servers.erase(fd);
+		// 			try {
+		// 				// std::cout << CIAN << "Response:" << fd << RESET << std::endl;
+		// 				iter->second->send(fd);
+		// 			}
+		// 			catch (cmalt::BaseException &e) {
+		// 				if (e.getErrorNumber() == 0) {
+		// 					std::cerr << e.what() << std::endl;
+		// 					this->_recv_servers.erase(fd);
+		// 					this->_accept_servers.erase(fd);
+		// 					if (fd > 0)
+		// 						close(fd);
+		// 				}
+		// 				else {
+		// 					this->_accept_servers[fd] = iter->second;
+		// 					this->_recv_servers.erase(fd);
+		// 					std::cout << CIAN << "Response-full:" << fd << RESET << std::endl;
+		// 				}
+		// 			}
+		// 			break;
+		// 		}
+		// 	}
+
+		// 	for (iter = this->_accept_servers.begin(); !pool && iter != this->_accept_servers.end(); ++iter) {
+		// 		int num = num_fds[iter->first];
+		// 		if (poll_fds[num].revents & POLLIN) {
+		// 			long	fd = iter->first;
+		// 			poll_fds[num].revents = 0;
+		// 			pool = true;
+		// 			try {
+		// 				// std::cout << CIAN << "Request:" << fd << RESET << std::endl;
+		// 				iter->second->recv(fd);
+		// 				if (iter->second->get_request_is_full(fd)) {
+		// 					std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;
+		// 					this->_recv_servers[iter->first] = iter->second;
+		// 					iter->second->set_request_is_full(false, fd);
+		// 				}
+		// 			}
+		// 			catch (cmalt::BaseException &e) {
+		// 				std::cerr << e.what() << std::endl;
+		// 				this->_accept_servers.erase(fd);
+		// 				if (fd > 0)
+		// 					close(fd);
+		// 			}
+		// 			break;
+		// 		}
+		// 	}
+
+		// 	for (std::map<long, Server>::iterator it = this->_listen_servers.begin(); pool == false && it != this->_listen_servers.end(); ++it) {
+		// 		int num = num_fds[it->first];
+		// 		if (poll_fds[num].revents & POLLIN) {
+		// 			poll_fds[num].revents = 0;
+		// 			pool = true;
+		// 			try {
+		// 				long fd = it->second.accept();
+		// 				poll_fds[sockets_size].fd = fd;
+		// 				poll_fds[sockets_size].events = POLLIN | POLLOUT;
+		// 				num_fds[fd] = sockets_size;
+		// 				sockets_size++;
+		// 				this->_accept_servers[fd] = &it->second;
+		// 			}
+		// 			catch (cmalt::BaseException &e) {
+		// 				std::cerr << e.what() << std::endl;
+		// 			}
+		// 			break;
+		// 		}
+		// 	}
+		// 	pool = true;
+		// }
 	}
 
 	/*
