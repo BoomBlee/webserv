@@ -176,16 +176,29 @@ namespace third {
 	}
 
 	void	Node::run_node() {
-		int		sockets_size = this->_listen_servers.size();
-		struct	pollfd	poll_fds[sockets_size * 1001];
-		std::map<long, int>	num_fds;
-		int	count = 0;
+		// int		sockets_size = this->_listen_servers.size();
+		// struct	pollfd	poll_fds[sockets_size * 1001];
+		// std::map<long, int>	num_fds;
+		// int	count = 0;
+
+		fd_set fd_read;
+		fd_set fd_write;
+		int max_fd = this->_listen_servers.size() + 2;
+		struct timeval tv;
+
+		FD_ZERO(&fd_read);
+		FD_ZERO(&fd_write);
+
 		for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
-			poll_fds[count].fd = iter->first;
-			poll_fds[count].events = POLLIN;
-			num_fds[iter->first] = count;
-			++count;
+			FD_SET(iter->first, &fd_read);
 		}
+
+		// for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
+		// 	poll_fds[count].fd = iter->first;
+		// 	poll_fds[count].events = POLLIN;
+		// 	num_fds[iter->first] = count;
+		// 	++count;
+		// }
 		while (true) {
 			bool	pool = true;
 			while (pool) {
