@@ -2,10 +2,12 @@
 #include "color.hpp"
 #include <iostream>
 #include <iterator>
+#include <locale>
 #include <map>
 #include <ostream>
 #include <string>
 #include <sys/poll.h>
+#include <sys/select.h>
 #include <unistd.h>
 
 //================================================================================
@@ -182,37 +184,24 @@ namespace third {
 		struct	pollfd	poll_fds[sockets_size * 1001];
 		std::map<long, int>	num_fds;
 		int	count = 0;
-		// for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
-		// 	poll_fds[count].fd = iter->first;
-		// 	poll_fds[count].events = POLLIN;
-		// 	num_fds[iter->first] = count;
-		// 	++count;
-		// }
 		for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
 			all_fds[iter->first].fd = iter->first;
 			all_fds[iter->first].events = POLLIN;
-			// all_fds[iter->first].revents = 0;
 			num_fds[iter->first] = count;
 			++count;
 		}
-		int k = 0;
-		while (k < 5) {
+		struct timeval	start2, end2;
+		while (true) {
 			bool	pool = true;
 			count = 0;
 			for (std::map<long, struct pollfd>::iterator iter = all_fds.begin(); iter != all_fds.end(); ++iter) {
 				poll_fds[count].fd = iter->second.fd;
 				poll_fds[count].events = iter->second.events;
 				poll_fds[count].revents = iter->second.revents;
-				// std::cout << RED << poll_fds[count].fd << " " << YELLOW << poll_fds[count].events << " " << GREEN << poll_fds[count].revents << std::endl;
-				// std::cout << RED << iter->second.fd << " " << YELLOW << iter->second.events << " " << GREEN << iter->second.revents << RESET << std::endl;
 				++count;
 			}
 			while (pool) {
-				// std::cout << all_fds.size() << std::endl;
 				int ret = poll(poll_fds, all_fds.size(), 10000);
-				// std::cout << RED << ret << " " << all_fds.size() << RESET << std::endl;
-				// std::cout << "\rWaiting on a connection;" << GREEN << "Ret:" << ret << ";Listen:" << this->_listen_servers.size() << ";Recv:" << this->_accept_servers.size() << ";Send:" << this->_recv_servers.size() << RESET << std::flush;
-				// std::cout << RED << ret << RESET << std::endl;
 				if (ret < 0)
 					this->poll_error(sockets_size, poll_fds, num_fds);
 				if (ret > 0)
@@ -223,19 +212,15 @@ namespace third {
 				all_fds[fd].fd = poll_fds[i].fd;
 				all_fds[fd].events = poll_fds[i].events;
 				all_fds[fd].revents = poll_fds[i].revents;
-				// std::cout << YELLOW << poll_fds[i].fd << " " << poll_fds[i].events << " " << poll_fds[i].revents << std::endl;
-				// std::cout << CIAN << all_fds[fd].fd << " " << all_fds[fd].events << " " << all_fds[fd].revents << RESET << std::endl;
 			}
 			std::map<long, Server*>::iterator iter;
 			for (iter = this->_recv_servers.begin(); iter != this->_recv_servers.end() && !pool; ++iter) {
 				long	fd = iter->first;
-				// int	num = num_fds[iter->first];
 				if (all_fds[fd].revents & POLLOUT) {
 					all_fds[fd].revents = 0;
 					pool = true;
 					this->_accept_servers.erase(fd);
 					try {
-						// std::cout << CIAN << "Response:" << fd << RESET << std::endl;
 						iter->second->send(fd);
 					}
 					catch (cmalt::BaseException &e) {
@@ -250,7 +235,11 @@ namespace third {
 						else {
 							this->_accept_servers[fd] = iter->second;
 							this->_recv_servers.erase(fd);
-							std::cout << CIAN << "Response-full:" << fd << RESET << std::endl;
+							gettimeofday(&end2, NULL);
+							long long t1 = (end2.tv_sec * 1000 + end2.tv_usec / 1000) - (start2.tv_sec * 1000 + start2.tv_usec / 1000);
+							std::cout << CIAN << "Response-full:" << t1 / 1000 << " " << fd << RESET << std::endl;
+							std::cout << RED << "Time: " << t1 << "ms" << RESET << std::endl;
+							gettimeofday(&start2, NULL);
 						}
 					}
 					break;
@@ -259,13 +248,10 @@ namespace third {
 
 			for (iter = this->_accept_servers.begin(); !pool && iter != this->_accept_servers.end(); ++iter) {
 				long	fd = iter->first;
-				// int num = num_fds[iter->first];
-				// std::cout << BLUE << fd << " " << all_fds[fd].revents << RESET << std::endl;
 				if (all_fds[fd].revents & POLLIN) {
 					all_fds[fd].revents = 0;
 					pool = true;
 					try {
-						// std::cout << CIAN << "Request:" << fd << RESET << std::endl;
 						iter->second->recv(fd);
 						if (iter->second->get_request_is_full(fd)) {
 							std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;
@@ -286,22 +272,14 @@ namespace third {
 			}
 
 			for (std::map<long, Server>::iterator it = this->_listen_servers.begin(); pool == false && it != this->_listen_servers.end(); ++it) {
-				// int num = num_fds[it->first];
 				long	fd = it->first;
-				// std::cout << BLUE << fd << " " << all_fds[fd].revents << RESET << std::endl;
 				if (all_fds[fd].revents & POLLIN) {
-					// std::cout << "YES" << std::endl;
 					all_fds[fd].revents = 0;
 					pool = true;
 					try {
 						long fd = it->second.accept();
 						all_fds[fd].fd = fd;
 						all_fds[fd].events = POLLIN | POLLOUT;
-						// all_fds[fd].revents = 0;
-						// poll_fds[sockets_size].fd = fd;
-						// poll_fds[sockets_size].events = POLLIN | POLLOUT;
-						// num_fds[fd] = sockets_size;
-						// sockets_size++;
 						this->_accept_servers[fd] = &it->second;
 					}
 					catch (cmalt::BaseException &e) {
@@ -311,7 +289,6 @@ namespace third {
 				}
 			}
 			pool = true;
-			// k++;
 		}
 	}
 

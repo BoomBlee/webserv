@@ -1,11 +1,16 @@
 #include "Server.hpp"
+#include "color.hpp"
+#include "headers.hpp"
+#include <bits/types/time_t.h>
 #include <cctype>
 #include <cstddef>
 #include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <iterator>
 #include <ostream>
 #include <string>
+#include <sys/select.h>
 #include <sys/socket.h>
 
 //================================================================================
@@ -262,16 +267,19 @@ namespace third {
 		this->_request[accept_socket] = request;
 		this->_response[accept_socket] = response;
 		this->_request_is_full[accept_socket] = false;
+		this->_send_pos[accept_socket] = 0;
+		this->_request_params[accept_socket];
 		return accept_socket;
 	}
 
 	/*
 		Получение запроса
 	*/
+
 	void	Server::recv(long& accept_socket) {
+		struct timeval	start1, start2, end1, end2;
 		if (this->_request_is_full[accept_socket] == false) {
 			char	buf[TCP_SIZE];
-			memset(buf, '\0', TCP_SIZE);
 			errno = 0;
 			int		size = ::recv(accept_socket, buf, TCP_SIZE - 1, 0);
 			if (size == 0) {
@@ -282,33 +290,53 @@ namespace third {
 				this->_read_buf.erase(accept_socket);
 				throw cmalt::BaseException("\rRead error, closing connection", 0);
 			}
+			memset(&buf[size], '\0', TCP_SIZE - size);
 			this->_read_buf[accept_socket] += std::string(buf);
-			// if (this->_read_buf[accept_socket].size() > 1000)
-			// 	std::cout << "\rRequest:\n{======================\n" << this->_read_buf[accept_socket].substr(0, 1000) << "\n}==================" << std::endl;
-			// else
-			// 	std::cout << "\rRequest:\n{======================\n" << this->_read_buf[accept_socket] << "\n}==================" << std::endl;
-			size_t	length = this->_read_buf[accept_socket].find("\r\n\r\n");
-			if (length != std::string::npos) {
-				size_t	pos = this->_read_buf[accept_socket].find("Content-Length:");
-				if (pos == std::string::npos) {
-					pos = this->_read_buf[accept_socket].find("Transfer-Encoding:");
-					if (pos != std::string::npos && this->chunked_detect(pos, accept_socket)) {
-						if (this->_read_buf[accept_socket].find("0\r\n\r\n", length) + 5 == this->_read_buf[accept_socket].size()) {
-							this->_request_is_full[accept_socket] = true;
+			if (!this->_request_params[accept_socket]._if_length) {
+				this->_request_params[accept_socket]._length = this->_read_buf[accept_socket].find("\r\n\r\n");
+				if (this->_request_params[accept_socket]._length != std::string::npos)
+					this->_request_params[accept_socket]._if_length = true;
+			}
+			if (this->_request_params[accept_socket]._if_length) {
+				if (!this->_request_params[accept_socket]._if_type) {
+					this->_request_params[accept_socket]._pos = this->_read_buf[accept_socket].find("Content-Length:");
+					if (this->_request_params[accept_socket]._pos == std::string::npos) {
+						this->_request_params[accept_socket]._pos = this->_read_buf[accept_socket].find("Transfer-Encoding:");
+						if (this->_request_params[accept_socket]._pos != std::string::npos && this->chunked_detect(this->_request_params[accept_socket]._pos, accept_socket)) {
+						 	this->_request_params[accept_socket]._type = 1;//transfer-encoding
+							if (this->_read_buf[accept_socket].find("0\r\n\r\n", this->_request_params[accept_socket]._length) + 5 == this->_read_buf[accept_socket].size())
+								this->_request_is_full[accept_socket] = true;
+							this->_request_params[accept_socket]._pos = this->_request_params[accept_socket]._length;
 						}
+						else
+							this->_request_is_full[accept_socket] = true;
 					}
-					else if (pos == std::string::npos)
-						this->_request_is_full[accept_socket] = true;
+					else {
+						this->_request_params[accept_socket]._type = 2;//content-length
+						this->_request_params[accept_socket]._pos = this->request_content_length_start_pos(this->_request_params[accept_socket]._pos, accept_socket);
+						this->_request_params[accept_socket]._size = this->_request_params[accept_socket]._length + 4 + std::atoi(this->_read_buf[accept_socket].substr(this->_request_params[accept_socket]._pos, this->request_content_length_end_pos(this->_request_params[accept_socket]._pos, accept_socket)).c_str());
+					}
+					this->_request_params[accept_socket]._if_type = true;
 				}
 				else {
-					pos = this->request_content_length_start_pos(pos, accept_socket);
-					length += 4 + std::atoi(this->_read_buf[accept_socket].substr(pos, this->request_content_length_end_pos(pos, accept_socket)).c_str());
-					if (this->_read_buf[accept_socket].size() >= length)
+					if (this->_request_params[accept_socket]._type == 1) {
+						if (this->_read_buf[accept_socket].find("0\r\n\r\n", this->_request_params[accept_socket]._pos) + 5 == this->_read_buf[accept_socket].size())
+							this->_request_is_full[accept_socket] = true;
+						if (this->_read_buf[accept_socket].find_last_of("0") != std::string::npos)
+							this->_request_params[accept_socket]._pos = this->_read_buf[accept_socket].find_last_of("0");
+					}
+					else if (this->_read_buf[accept_socket].size() >= this->_request_params[accept_socket]._size)
 						this->_request_is_full[accept_socket] = true;
 				}
 			}
 			if (this->_request_is_full[accept_socket] == true) {
 				this->_request[accept_socket].parse(this->_read_buf[accept_socket]);
+				this->_request_params[accept_socket]._if_length = false;
+				this->_request_params[accept_socket]._length = 0;
+				this->_request_params[accept_socket]._if_type = false;
+				this->_request_params[accept_socket]._size = 0;
+				this->_request_params[accept_socket]._type = 0;
+				this->_request_params[accept_socket]._pos = 0;
 				this->_read_buf.erase(accept_socket);
 			}
 		}
@@ -318,29 +346,22 @@ namespace third {
 		Отправка ответа
 	*/
 	void	Server::send(long& accept_socket) {
-		if (this->_response[accept_socket].getAsk().size() == 0)
+		long size = 0;
+		if (this->_send_pos[accept_socket] == 0)
 			this->_response[accept_socket].initialisation(this->_request[accept_socket]);
-		std::string	str = this->_response[accept_socket].getAsk();
-		if (str.size() > TCP_SIZE) {
-			this->_response[accept_socket].setAsk(str.substr(TCP_SIZE));
-			str = str.substr(0, TCP_SIZE);
-		}
-		else
-			this->_response[accept_socket].setAsk(std::string(""));
-		// if (str.size() > 1000)
-		// 	std::cout << "\rResponse:\n{======================\n" << str.substr(0, 1000) << "\n}==================" << std::endl;
-		// else
-		// 	std::cout << "\rResponse:\n{======================\n" << str << "\n}==================" << std::endl;
-		size_t	ret = ::send(accept_socket, str.c_str(), str.size(), 0);
-		// std::cout << ret << "|" << str.size() << "|"  << this->_response[accept_socket].getAsk().size() << std::endl;
-		if (ret < 0) {
-			// close(accept_socket);
+		size = this->_response[accept_socket].getAsk().size() - this->_send_pos[accept_socket];
+		if (size > TCP_SIZE)
+			size = TCP_SIZE;
+		size_t	ret = ::send(accept_socket, &this->_response[accept_socket].getAsk().c_str()[this->_send_pos[accept_socket]], size, 0);
+		this->_send_pos[accept_socket] += TCP_SIZE;
+		if (ret < 0)
 			throw cmalt::BaseException("\rSend error, closing connection", 0);
-		}
 		if (!this->_request[accept_socket].getConnection())
 			throw cmalt::BaseException("\rConnection closed", 0);
-		if (this->_response[accept_socket].getAsk().size() == 0)
+		if (this->_send_pos[accept_socket] > this->_response[accept_socket].getAsk().size()) {
+			this->_send_pos[accept_socket] = 0;
 			throw cmalt::BaseException("\rSend full ask", 1);
+		}
 	}
 
 	/*
