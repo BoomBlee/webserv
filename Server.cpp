@@ -347,17 +347,16 @@ namespace third {
 		Отправка ответа
 	*/
 	void	Server::send(long& accept_socket) {
-		static long s = 0;
 		long size = 0;
 		if (this->_send_pos[accept_socket] == 0)
 			this->_response[accept_socket].initialisation(this->_request[accept_socket]);
 		size = this->_response[accept_socket].getAsk().size() - this->_send_pos[accept_socket];
 		if (size > TCP_SIZE)
 			size = TCP_SIZE;
-		size_t	ret = ::send(accept_socket, &this->_response[accept_socket].getAsk().c_str()[this->_send_pos[accept_socket]], size, 0);
-		this->_send_pos[accept_socket] += ret;
+		long	ret = ::send(accept_socket, &this->_response[accept_socket].getAsk().c_str()[this->_send_pos[accept_socket]], size, 0);
 		if (ret < 0)
 			throw cmalt::BaseException("\rSend error, closing connection", 0);
+		this->_send_pos[accept_socket] += ret;
 		if (!this->_request[accept_socket].getConnection())
 			throw cmalt::BaseException("\rConnection closed", 0);
 		if (this->_send_pos[accept_socket] >= this->_response[accept_socket].getAsk().size()) {
