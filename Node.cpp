@@ -196,7 +196,7 @@ namespace third {
 			++count;
 		}
 		int k = 0;
-		while (k < 5) {
+		while (true) {
 			bool	pool = true;
 			count = 0;
 			for (std::map<long, struct pollfd>::iterator iter = all_fds.begin(); iter != all_fds.end(); ++iter) {
@@ -217,6 +217,8 @@ namespace third {
 					this->poll_error(sockets_size, poll_fds, num_fds);
 				if (ret > 0)
 					pool = false;
+				else
+					sleep(10);
 			}
 			for (int i = 0; i < count; ++i) {
 				long fd = poll_fds[i].fd;
@@ -250,7 +252,7 @@ namespace third {
 						else {
 							this->_accept_servers[fd] = iter->second;
 							this->_recv_servers.erase(fd);
-							std::cout << CIAN << "Response-full:" << fd << RESET << std::endl;
+							// std::cout << CIAN << "Response-full:" << fd << RESET << std::endl;
 						}
 					}
 					break;
@@ -268,7 +270,7 @@ namespace third {
 						// std::cout << CIAN << "Request:" << fd << RESET << std::endl;
 						iter->second->recv(fd);
 						if (iter->second->get_request_is_full(fd)) {
-							std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;
+							// std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;
 							this->_recv_servers[iter->first] = iter->second;
 							iter->second->set_request_is_full(false, fd);
 						}
@@ -310,7 +312,6 @@ namespace third {
 					break;
 				}
 			}
-			pool = true;
 			// k++;
 		}
 	}

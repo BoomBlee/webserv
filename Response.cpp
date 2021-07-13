@@ -9,7 +9,7 @@
 #include <ostream>
 #include <string>
 #include <sys/stat.h>
-
+#include <ctime>
 extern	cmalt::ConstantsParametrs	params;
 extern	cmalt_kyoko::CGI			cgi;
 
@@ -23,7 +23,7 @@ namespace cmalt {
 #define ERROR_PATH_500 "500_error.html"
 #define ERROR_PATH_505 "505_error.html"
 
-Response::Response() {
+Response::Response() : askSize(0) {
 	this->setMethodFunctions();
 	this->setErrorsPath();
 }
@@ -44,10 +44,14 @@ Response	&Response::operator=(const Response &copy) {
 	this->req = copy.req;
 	this->errorsPath = copy.errorsPath;
 	this->methodFunctions = copy.methodFunctions;
+	this->askSize = copy.askSize;
 	return *this;
 }
 
-void								Response::initialisation(Request &request) {
+std::string								&Response::initialisation(Request &request) {
+	struct timeval start, end;
+	gettimeofday(&start, NULL);
+
 	this->clear();
 	this->setRequest(request);
 	this->setConfig(this->req.getLocation());
@@ -71,6 +75,11 @@ void								Response::initialisation(Request &request) {
 		this->ask = this->askStatus() + this->askHeaders() + std::string("\r\n") + this->ask;
 	}
 	this->closeFile();
+	this->askSize = this->ask.size();
+	gettimeofday(&end, NULL);
+
+	std::cout << CIAN << (end.tv_sec * 1000 + end.tv_usec / 1000) - (start.tv_sec * 1000 + start.tv_usec / 1000) << RESET << std::endl;
+	return this->ask;
 }
 
 void								Response::clear() {
@@ -257,8 +266,13 @@ void								Response::methodDELETE() {
 	this->ask = this->askStatus() + this->askHeaders() + "\r\n";
 }
 
-void								Response::cgi() {
+void								Response::cgi() {//
+	struct timeval start, endd;
+	gettimeofday(&start, NULL);
+
 	this->ask = ::cgi.execCGI(this->req);
+	gettimeofday(&endd, NULL);
+	std::cout << RED << (endd.tv_sec * 1000 + endd.tv_usec / 1000) - (start.tv_sec * 1000 + start.tv_usec / 1000) << RESET << std::endl;
 	size_t	pos = 0;
 	size_t	end = this->ask.size();
 	// std::cout << RED << this->ask[1000] << RESET << std::endl;
@@ -277,6 +291,7 @@ void								Response::cgi() {
 	while (this->ask.find("\r\n", end) == end)
 		end -= 2;
 	this->ask = this->ask.substr(pos, end - pos);
+
 }
 
 std::string							Response::generateAutoindex(const char *path) {
@@ -345,6 +360,11 @@ std::string							&Response::getAsk() {
 	return this->ask;
 }
 
+size_t								&Response::getAskSize() {
+	this->askSize = this->ask.size();
+	return this->askSize;
+}
+
 Request								&Response::getRequest() {
 	return this->req;
 }
@@ -355,6 +375,10 @@ std::map<std::string, std::string>	&Response::getHeaders() {
 
 void								Response::setAsk(std::string str) {
 	this->ask = str;
+}
+
+void								Response::resizeAsk(size_t size) {
+	this->ask.erase(0, size);
 }
 
 //================================================================================

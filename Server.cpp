@@ -318,20 +318,25 @@ namespace third {
 		Отправка ответа
 	*/
 	void	Server::send(long& accept_socket) {
-		if (this->_response[accept_socket].getAsk().size() == 0)
+		if (this->_response[accept_socket].getAskSize() == 0)
 			this->_response[accept_socket].initialisation(this->_request[accept_socket]);
-		std::string	str = this->_response[accept_socket].getAsk();
-		if (str.size() > TCP_SIZE) {
-			this->_response[accept_socket].setAsk(str.substr(TCP_SIZE));
-			str = str.substr(0, TCP_SIZE);
-		}
-		else
-			this->_response[accept_socket].setAsk(std::string(""));
+		// std::string	str = this->_response[accept_socket].getAsk();
+		// if (str.size() > TCP_SIZE) {
+		// 	this->_response[accept_socket].setAsk(str.substr(TCP_SIZE));
+		// 	str.resize(TCP_SIZE);
+		// }
+		// else
+		// 	this->_response[accept_socket].setAsk(std::string(""));
 		// if (str.size() > 1000)
 		// 	std::cout << "\rResponse:\n{======================\n" << str.substr(0, 1000) << "\n}==================" << std::endl;
 		// else
 		// 	std::cout << "\rResponse:\n{======================\n" << str << "\n}==================" << std::endl;
-		size_t	ret = ::send(accept_socket, str.c_str(), str.size(), 0);
+		// size_t	ret = ::send(accept_socket, str.c_str(), str.size(), 0);
+		size_t	size = this->_response[accept_socket].getAskSize();
+		if (size > TCP_SIZE)
+			size = TCP_SIZE;
+		size_t	ret = ::send(accept_socket, this->_response[accept_socket].getAsk().c_str(), size, 0);
+		this->_response[accept_socket].resizeAsk(size);
 		// std::cout << ret << "|" << str.size() << "|"  << this->_response[accept_socket].getAsk().size() << std::endl;
 		if (ret < 0) {
 			// close(accept_socket);
@@ -339,7 +344,7 @@ namespace third {
 		}
 		if (!this->_request[accept_socket].getConnection())
 			throw cmalt::BaseException("\rConnection closed", 0);
-		if (this->_response[accept_socket].getAsk().size() == 0)
+		if (!this->_response[accept_socket].getAsk().size())
 			throw cmalt::BaseException("\rSend full ask", 1);
 	}
 

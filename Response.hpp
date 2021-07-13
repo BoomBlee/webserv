@@ -13,20 +13,23 @@ public:
 	Response(const Response &);
 	~Response();
 	Response							&operator=(const Response &);
-	void								initialisation(Request &);
+	std::string							&initialisation(Request &);
 
 	kyoko::ConfigLocation				&getConfig();
 	std::string							&getType();
 	std::string							&getAsk();
+	size_t								&getAskSize();
 	Request								&getRequest();
 	std::map<std::string, std::string>	&getHeaders();
 	void								setAsk(std::string);
+	void								resizeAsk(size_t);
 private:
 	kyoko::ConfigLocation				conf;
 	std::string							path;
 	std::string							fullPath;
 	std::string							type;
 	std::string							ask;
+	size_t								askSize;
 	Request 							req;
 	std::map<std::string, std::string>	headers;
 	std::fstream						file;

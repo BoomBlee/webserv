@@ -30,6 +30,7 @@ namespace third {
 		std::map<long, std::string>	_read_buf;
 		std::map<long, cmalt::Response>	_response;
 		std::map<long, bool>	_request_is_full;
+		std::map<long, size_t>	_size_send;
 	public:
 		/*
 			Конструкторы:

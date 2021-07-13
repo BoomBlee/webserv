@@ -47,6 +47,9 @@ $(BINS_TEMP): %.cpp $(HEADERS)
 $(BIN_DIR):
 	@mkdir $(BIN_DIR)
 
+run: all
+	@./webserv example.conf
+
 clean:
 	@rm -rf $(BIN_DIR)
 	@echo "\033[1;33mclean completed\033[0m"
