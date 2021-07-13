@@ -17,7 +17,7 @@ private:
 	std::string _index;
 	std::vector<std::string>	_Methods;
 	size_t	_body_size;
-
+	std::string _redirect;
 public:
 	ConfigLocation();
 	ConfigLocation(const ConfigLocation &copy);
@@ -30,6 +30,7 @@ public:
 	std::string& getIndex();
 	size_t&	getBodySize();
 	std::vector<std::string>& getMethods();
+	std::string& getRedirect();
 	ConfigLocation	&operator=(const ConfigLocation &copy);
 };
 

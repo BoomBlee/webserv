@@ -11,6 +11,7 @@ std::string& ConfigLocation::getCgiPath() {return _cgiPath;};
 std::string& ConfigLocation::getType() {return _type;};
 std::string& ConfigLocation::getIndex() {return _index;};
 std::vector<std::string>& ConfigLocation::getMethods() {return _Methods;};
+std::string& ConfigLocation::getRedirect() {return _redirect;};
 ConfigLocation&	ConfigLocation::operator=(const ConfigLocation &copy) {
 	this->_autoindex = copy._autoindex;
 	this->_path = copy._path;
@@ -20,6 +21,7 @@ ConfigLocation&	ConfigLocation::operator=(const ConfigLocation &copy) {
 	this->_index = copy._index;
 	this->_Methods = copy._Methods;
 	this->_body_size = copy._body_size;
+	this->_redirect = copy._redirect;
 	return *this;
 }
 size_t&	ConfigLocation::getBodySize() {return _body_size;};

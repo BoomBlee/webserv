@@ -63,6 +63,9 @@ void ConfigServers::_write_params_loc(std::string& str, ConfigLocation& loc) {
 			else
 				_write_methods(second_str, loc.getMethods());
 		}
+		else if (first_str == "redirect") {
+			loc.getRedirect() = second_str;
+		}
 		else {
 			throw std::logic_error("error config: not found params \"" + str + "\"");//
 		}

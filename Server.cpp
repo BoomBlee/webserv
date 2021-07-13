@@ -228,6 +228,9 @@ namespace third {
 			this->_listen_socket = socket(AF_INET, SOCK_STREAM, 0);
 			if (this->_listen_socket == -1)
 				throw cmalt::BaseException("Failed to create socket", 1);
+			int enable = 1;
+			if (setsockopt(this->_listen_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+				throw cmalt::BaseException("Failed setsockopt(SO_REUSEADDR)", 9);
 			/*
 				Созданный сокет привязывается к нашей структуре, а точнее к данным внесенным в нее, т.е. к ip и порту
 				В случае ошибки бросается исключение с кодом 2, а созданный сокет закрывается
@@ -322,7 +325,7 @@ namespace third {
 					if (this->_request_params[accept_socket]._type == 1) {
 						if (this->_read_buf[accept_socket].find("0\r\n\r\n", this->_request_params[accept_socket]._pos) + 5 == this->_read_buf[accept_socket].size())
 							this->_request_is_full[accept_socket] = true;
-						std::cout << this->_read_buf[accept_socket].size() << std::endl;
+						// std::cout << this->_read_buf[accept_socket].size() << std::endl;
 						if (this->_read_buf[accept_socket].find_last_of("0") != std::string::npos)
 							this->_request_params[accept_socket]._pos = this->_read_buf[accept_socket].find_last_of("0");
 					}
