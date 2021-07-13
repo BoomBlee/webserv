@@ -239,7 +239,7 @@ void								Response::methodPOST() {
 		this->req.setStatus("No Content");
 	}
 	this->setHeaders();
-	this->ask = this->askStatus() + this->askHeaders() + "\r\n" + this->ask;
+	this->ask = this->askStatus() + this->askHeaders() + "\r\n" + this->ask + "\r\n";
 }
 
 void								Response::methodDELETE() {
@@ -277,6 +277,7 @@ void								Response::cgi() {
 	while (this->ask.find("\r\n", end) == end)
 		end -= 2;
 	this->ask = this->ask.substr(pos, end - pos);
+	std::cout << "SIZE:" << this->ask.size() << std::endl;
 }
 
 std::string							Response::generateAutoindex(const char *path) {

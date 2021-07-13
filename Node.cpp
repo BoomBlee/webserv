@@ -12,7 +12,6 @@
 
 //================================================================================
 namespace third {
-
 	/*
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		Конструкторы, Деструктор и перегрузка операторов
@@ -252,6 +251,7 @@ namespace third {
 					all_fds[fd].revents = 0;
 					pool = true;
 					try {
+						std::cout << CIAN << "REQUEST" << RESET << std::endl;
 						iter->second->recv(fd);
 						if (iter->second->get_request_is_full(fd)) {
 							std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;

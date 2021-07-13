@@ -1,7 +1,7 @@
 #include "Server.hpp"
 #include "color.hpp"
 #include "headers.hpp"
-#include <bits/types/time_t.h>
+// #include <bits/types/time_t.h>
 #include <cctype>
 #include <cstddef>
 #include <cstdlib>
@@ -322,6 +322,7 @@ namespace third {
 					if (this->_request_params[accept_socket]._type == 1) {
 						if (this->_read_buf[accept_socket].find("0\r\n\r\n", this->_request_params[accept_socket]._pos) + 5 == this->_read_buf[accept_socket].size())
 							this->_request_is_full[accept_socket] = true;
+						std::cout << this->_read_buf[accept_socket].size() << std::endl;
 						if (this->_read_buf[accept_socket].find_last_of("0") != std::string::npos)
 							this->_request_params[accept_socket]._pos = this->_read_buf[accept_socket].find_last_of("0");
 					}
@@ -346,6 +347,7 @@ namespace third {
 		Отправка ответа
 	*/
 	void	Server::send(long& accept_socket) {
+		static long s = 0;
 		long size = 0;
 		if (this->_send_pos[accept_socket] == 0)
 			this->_response[accept_socket].initialisation(this->_request[accept_socket]);
@@ -353,12 +355,12 @@ namespace third {
 		if (size > TCP_SIZE)
 			size = TCP_SIZE;
 		size_t	ret = ::send(accept_socket, &this->_response[accept_socket].getAsk().c_str()[this->_send_pos[accept_socket]], size, 0);
-		this->_send_pos[accept_socket] += TCP_SIZE;
+		this->_send_pos[accept_socket] += ret;
 		if (ret < 0)
 			throw cmalt::BaseException("\rSend error, closing connection", 0);
 		if (!this->_request[accept_socket].getConnection())
 			throw cmalt::BaseException("\rConnection closed", 0);
-		if (this->_send_pos[accept_socket] > this->_response[accept_socket].getAsk().size()) {
+		if (this->_send_pos[accept_socket] >= this->_response[accept_socket].getAsk().size()) {
 			this->_send_pos[accept_socket] = 0;
 			throw cmalt::BaseException("\rSend full ask", 1);
 		}
