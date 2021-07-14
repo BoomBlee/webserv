@@ -11,7 +11,6 @@ ConfigLocation \
 ConfigServer \
 ConfigServers \
 ConstantParametrs \
-ConstatsParametrs \
 Node \
 Request \
 Response \

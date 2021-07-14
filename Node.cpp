@@ -10,6 +10,8 @@
 #include <sys/select.h>
 #include <unistd.h>
 
+extern bool work;
+
 //================================================================================
 namespace third {
 	/*
@@ -17,38 +19,20 @@ namespace third {
 		Конструкторы, Деструктор и перегрузка операторов
 	*/
 
-	/*
-		Стандартный конструктор
-	*/
 	Node::Node() {}
 
-	/*
-		Конструктор с конфигом в качастве параметра
-	*/
 	Node::Node(kyoko::ConfigServers& config) : _config(config) {}
 
-	/*
-		Конструктор с конфигом в качастве параметра
-	*/
 	Node::Node(std::string& path_to_config) {
 		this->_config.add(path_to_config);
 	}
 
-	/*
-		Конструктор копирования
-	*/
 	Node::Node(const Node& src_node) {
 		*this = src_node;
 	}
 
-	/*
-		Деструктор
-	*/
 	Node::~Node() {}
 
-	/*
-		Перегрузка оператора присванивание
-	*/
 	Node&	Node::operator=(const Node& src_node) {
 		this->_config = src_node._config;
 		this->_listen_servers = src_node._listen_servers;
@@ -62,9 +46,6 @@ namespace third {
 		Геттеры
 	*/
 
-	/*
-		Гетер для _listen_servers
-	*/
 	std::map<long, Server>&	Node::get_listen_servers() {
 		return this->_listen_servers;
 	}
@@ -73,9 +54,6 @@ namespace third {
 		return this->_listen_servers[socket];
 	}
 
-	/*
-		Гетер для _accept_servers
-	*/
 	std::map<long, Server*>&	Node::get_accept_servers() {
 		return this->_accept_servers;
 	}
@@ -84,9 +62,6 @@ namespace third {
 		return *(this->_accept_servers[socket]);
 	}
 
-	/*
-		Гетер для _recv_servers
-	*/
 	std::map<long, Server*>&	Node::get_recv_servers() {
 		return this->_recv_servers;
 	}
@@ -95,9 +70,6 @@ namespace third {
 		return *(this->_recv_servers[socket]);
 	}
 
-	/*
-		Гетер для _config
-	*/
 	kyoko::ConfigServers&	Node::get_config() {
 		return this->_config;
 	}
@@ -107,9 +79,6 @@ namespace third {
 		Сеттеры
 	*/
 
-	/*
-		Сеттер для _listen_servers
-	*/
 	void	Node::set_listen_servers(std::map<long, Server>& servers) {
 		this->_listen_servers = servers;
 	}
@@ -118,9 +87,6 @@ namespace third {
 		this->_listen_servers[socket] = server;
 	}
 
-	/*
-		Сеттер для _accept_servers
-	*/
 	void	Node::set_accept_servers(std::map<long, Server*>& servers) {
 		this->_accept_servers = servers;
 	}
@@ -129,9 +95,6 @@ namespace third {
 		this->_accept_servers[socket] = &server;
 	}
 
-	/*
-		Сеттер для _recv_servers
-	*/
 	void	Node::set_recv_servers(std::map<long, Server*>& servers) {
 		this->_recv_servers = servers;
 	}
@@ -140,9 +103,6 @@ namespace third {
 		this->_recv_servers[socket] = &server;
 	}
 
-	/*
-		Сеттер для _config
-	*/
 	void	Node::set_config(kyoko::ConfigServers& config) {
 		this->_config = config;
 	}
@@ -178,31 +138,30 @@ namespace third {
 	}
 
 	void	Node::run_node() {
-		int		sockets_size = this->_listen_servers.size();
 		std::map<long, struct pollfd>	all_fds;
-		struct	pollfd	poll_fds[sockets_size * 1001];
-		std::map<long, int>	num_fds;
+		struct	pollfd	poll_fds[this->_listen_servers.size() * 1001];
 		int	count = 0;
 		for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
 			all_fds[iter->first].fd = iter->first;
 			all_fds[iter->first].events = POLLIN;
-			num_fds[iter->first] = count;
 			++count;
 		}
 		struct timeval	start2, end2;
-		while (true) {
+		gettimeofday(&start2, NULL);
+		while (work) {
 			bool	pool = true;
-			count = 0;
-			for (std::map<long, struct pollfd>::iterator iter = all_fds.begin(); iter != all_fds.end(); ++iter) {
-				poll_fds[count].fd = iter->second.fd;
-				poll_fds[count].events = iter->second.events;
-				poll_fds[count].revents = iter->second.revents;
-				++count;
-			}
 			while (pool) {
+				count = 0;
+				for (std::map<long, struct pollfd>::iterator iter = all_fds.begin(); iter != all_fds.end(); ++iter) {
+					poll_fds[count].fd = iter->second.fd;
+					poll_fds[count].events = iter->second.events;
+					// poll_fds[count].revents = iter->second.revents;//проверить на маке
+					poll_fds[count].revents = 0;
+					++count;
+				}
 				int ret = poll(poll_fds, all_fds.size(), 10000);
 				if (ret < 0)
-					this->poll_error(sockets_size, poll_fds, num_fds);
+					this->poll_error(all_fds);
 				if (ret > 0)
 					pool = false;
 			}
@@ -226,6 +185,7 @@ namespace third {
 						if (e.getErrorNumber() == 0) {
 							std::cerr << e.what() << std::endl;
 							all_fds.erase(fd);
+							iter->second->erase(fd);
 							this->_recv_servers.erase(fd);
 							this->_accept_servers.erase(fd);
 							if (fd > 0)
@@ -261,6 +221,7 @@ namespace third {
 					catch (cmalt::BaseException &e) {
 						std::cerr << e.what() << std::endl;
 						all_fds.erase(fd);
+						iter->second->erase(fd);
 						this->_accept_servers.erase(fd);
 						this->_recv_servers.erase(fd);
 						if (fd > 0)
@@ -289,6 +250,23 @@ namespace third {
 			}
 			pool = true;
 		}
+		std::cout << RED << "STOP" << RESET << std::endl;
+	}
+
+	void	Node::clear() {
+		std::map<long, Server*>::iterator iter;
+		for (iter = this->_accept_servers.begin(); iter != this->_accept_servers.end(); ++iter)
+			close(iter->first);
+		for (iter = this->_recv_servers.begin(); iter != this->_recv_servers.end(); ++iter)
+			close(iter->first);
+		std::map<long, Server>::iterator iterator;
+		for (iterator = this->_listen_servers.begin(); iterator != this->_listen_servers.end(); ++iterator) {
+			iterator->second.clear();
+			close(iterator->first);
+		}
+		this->_listen_servers.clear();
+		this->_accept_servers.clear();
+		this->_recv_servers.clear();
 	}
 
 	/*
@@ -302,19 +280,21 @@ namespace third {
 		this->_listen_servers[socket] = server;
 	}
 
-	void	Node::poll_error(int& sockets_size, struct pollfd* poll_fds, std::map<long, int>& num_fds) {
+	void	Node::poll_error(std::map<long, struct pollfd>& all_fds) {
 		std::cerr << "Poll error" << std::endl;
-		for (std::map<long, Server*>::iterator iter = this->_accept_servers.begin(); iter != this->_accept_servers.end(); ++iter) {
+		std::map<long, Server*>::iterator iter;
+		for (iter = this->_accept_servers.begin(); iter != this->_accept_servers.end(); ++iter) {
 			long	fd = iter->first;
-			int	num = num_fds[fd];
+			all_fds.erase(fd);
 			if (fd > 0)
 				close(fd);
-			poll_fds[num].fd = 0;
-			poll_fds[num].events = 0;
-			poll_fds[num].revents = 0;
-			num_fds.erase(fd);
 		}
-		sockets_size -= this->_accept_servers.size();
+		for (iter = this->_recv_servers.begin(); iter != this->_recv_servers.end(); ++iter) {
+			long	fd = iter->first;
+			all_fds.erase(fd);
+			if (fd > 0)
+				close(fd);
+		}
 		this->_accept_servers.clear();
 		this->_recv_servers.clear();
 	}

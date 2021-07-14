@@ -11,25 +11,14 @@
 //================================================================================
 namespace third {
 
-	class _recv_param {
-	public:
+	typedef struct recv_param {
 		bool	_if_length;
 		size_t	_length;
 		bool	_if_type;
 		int	_type;
 		size_t	_size;
 		size_t	_pos;
-		_recv_param() : _if_length(false), _length(0), _if_type(false), _type(0), _size(0), _pos(0) {}
-		_recv_param	&operator=(const _recv_param &copy) {
-			this->_if_length = copy._if_length;
-			this->_length = copy._length;
-			this->_if_type = copy._if_type;
-			this->_type = copy._type;
-			this->_size = copy._size;
-			this->_pos = copy._pos;
-			return *this;
-		}
-	};
+	}	request_parameters;
 
 	class	Server {
 	private:
@@ -51,7 +40,7 @@ namespace third {
 		std::map<long, cmalt::Response>	_response;
 		std::map<long, bool>	_request_is_full;
 		std::map<long, long>	_send_pos;
-		std::map<long, _recv_param>	_request_params;
+		std::map<long, request_parameters>	_request_params;
 	public:
 		/*
 			Конструкторы:
@@ -106,6 +95,8 @@ namespace third {
 		void	recv(long&);
 		void	send(long&);
 		void	start_listening_host();
+		void	clear();
+		void	erase(long);
 	private:
 		/*
 			Вспомогательные методы:

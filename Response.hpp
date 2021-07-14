@@ -35,7 +35,7 @@ private:
 private:
 	void								clear();
 	void								setConfig(kyoko::ConfigLocation &);
-	void								setPath(std::string &);
+	void								setPath(std::string);
 	void								setType(std::string &);//path
 	void								setHeaders();
 	void								setAllow();
@@ -54,9 +54,10 @@ private:
 	void								methodPUT();
 	void								methodPOST();
 	void								methodDELETE();
-	// void								methodHEAD();
 
 	void								cgi();
+
+	void								deleteDoubleSlash(std::string &);
 
 	std::string							askStatus();
 	std::string							askHeaders();

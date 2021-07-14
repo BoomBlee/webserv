@@ -1,4 +1,5 @@
 #include "Response.hpp"
+#include "color.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
@@ -9,6 +10,7 @@
 #include <ostream>
 #include <string>
 #include <sys/stat.h>
+#include <vector>
 
 extern	cmalt::ConstantsParametrs	params;
 extern	cmalt_kyoko::CGI			cgi;
@@ -17,11 +19,11 @@ extern	cmalt_kyoko::CGI			cgi;
 namespace cmalt {
 //================================================================================
 
-#define ERROR_PATH_400 "400_error.html"
-#define ERROR_PATH_404 "404_error.html"
-#define ERROR_PATH_405 "405_error.html"
-#define ERROR_PATH_500 "500_error.html"
-#define ERROR_PATH_505 "505_error.html"
+#define ERROR_PATH_400 "./YoupiBanane/errors/error_404.htm"
+#define ERROR_PATH_404 "./YoupiBanane/errors/error_404.htm"
+#define ERROR_PATH_405 "./YoupiBanane/errors/error_404.htm"
+#define ERROR_PATH_500 "./YoupiBanane/errors/error_500.htm"
+#define ERROR_PATH_505 "./YoupiBanane/errors/error_505.htm"
 
 Response::Response() {
 	this->setMethodFunctions();
@@ -56,6 +58,8 @@ void								Response::initialisation(Request &request) {
 	try {
 		if (this->req.getCode() != 200)
 			throw BaseException(this->req.getStatus(), this->req.getCode());
+		if (this->conf.getRedirect() != "")
+			throw BaseException("Moved Permanently", 301);
 		vecFind(this->conf.getMethods().begin(), this->conf.getMethods().end(), this->req.getMethod(), 405, "Method Not Allowed");
 		if (this->conf.getBodySize() != 0 && this->conf.getBodySize() < this->req.getBody().size())
 			throw BaseException("Payload Too Large", 413);
@@ -64,7 +68,10 @@ void								Response::initialisation(Request &request) {
 	catch (BaseException &e) {
 		this->req.setCode(e.getErrorNumber());
 		this->req.setStatus(e.what());
-		this->setPath(this->errorsPath[e.getErrorNumber()]);
+		if (this->errorsPath[e.getErrorNumber()] != "")
+			this->setPath(this->errorsPath[e.getErrorNumber()].substr(13));
+		else
+		 	this->setPath("/");
 		this->setType(this->path);
 		this->getErrorHtml();
 		this->setHeaders();
@@ -85,10 +92,10 @@ void								Response::setConfig(kyoko::ConfigLocation &location) {
 	this->conf = location;
 }
 
-void								Response::setPath(std::string &path) {
+void								Response::setPath(std::string path) {
 	this->path = path;
 	this->fullPath = this->req.getFullPath();
-	if (this->stat(this->fullPath.c_str()) == 1)
+	if (this->stat(this->fullPath.c_str()) == 1 && this->conf.getIndex() != "")
 		this->fullPath += "/" + this->conf.getIndex();
 }
 
@@ -101,6 +108,8 @@ void								Response::setType(std::string &path) {
 		this->type = path.substr(pos2 + 1);
 	if (::params.getTypes()[this->type] != "")
 		this->type = ::params.getTypes()[this->type];
+	else if (this->conf.getAutoindex())
+		this->type = "text/html";
 	else
 		this->type = "text/plain";
 }
@@ -108,15 +117,15 @@ void								Response::setType(std::string &path) {
 void								Response::setHeaders() {
 	if (this->req.getCode() == 405)
 		this->setAllow();
-	// if (this->ask.size() != 0 || this->conf.getCgiPath() != "") {
 	this->headers["Content-Length"] = std::to_string(this->ask.size());
 	this->headers["Content-Type"] = this->type;
 	this->headers["Content-Location"] = this->path;
-	// }
-	this->headers["Location"] = this->path;
+	if (this->conf.getRedirect() != "")
+		this->headers["Location"] = this->conf.getRedirect();
+	else
+		this->headers["Location"] = this->path;
 	this->headers["Server"] = std::string("WebServ/1.1");
 	this->headers["Date"] = this->getDate();
-	this->headers["Connection"] = this->req.getConnection() ? "keep-alive" : "close";
 }
 
 void								Response::setAllow() {
@@ -143,6 +152,9 @@ std::string							Response::getDate() {
 
 void								Response::setRequest(Request &request) {
 	this->req = request;
+	this->deleteDoubleSlash(this->req.getFullPath());
+	this->deleteDoubleSlash(this->req.getLocPath());
+	this->deleteDoubleSlash(this->req.getPath());
 }
 
 void								Response::openFile(std::string &path, std::ios_base::openmode mode) {
@@ -261,7 +273,6 @@ void								Response::cgi() {
 	this->ask = ::cgi.execCGI(this->req);
 	size_t	pos = 0;
 	size_t	end = this->ask.size();
-	// std::cout << RED << this->ask[1000] << RESET << std::endl;
 	while (this->ask.find("\r\n\r\n", pos) != std::string::npos || this->ask.find("\r\n", pos) == pos) {
 		if (this->ask.find("Status: ", pos) == pos) {
 			this->req.setCode(std::atoi(this->ask.substr(pos + 8, 3).c_str()));
@@ -279,9 +290,17 @@ void								Response::cgi() {
 	this->ask = this->ask.substr(pos, end - pos);
 }
 
+void								Response::deleteDoubleSlash(std::string &str) {
+	for (std::string::iterator it = str.begin(); it != str.end(); ++it) {
+		if (*it == '/' && *(it + 1) == '/')
+			str.erase(it + 1);
+	}
+}
+
 std::string							Response::generateAutoindex(const char *path) {
 	std::string dirName(path);
     DIR *dir = opendir(path);
+	std::vector<std::string>	files;
     std::string page =\
     "<!DOCTYPE html>\n\
     <html>\n\
@@ -299,8 +318,21 @@ std::string							Response::generateAutoindex(const char *path) {
     if (dirName[0] != '/')
         dirName = "/" + dirName;
     for (struct dirent *dirEntry = readdir(dir); dirEntry; dirEntry = readdir(dir)) {
-        page += "\t\t<p><a href=\"http://" + std::to_string(this->req.getConfig().getHost()) + ":" + std::to_string(this->req.getConfig().getPort()) + dirName + "/" + std::string(dirEntry->d_name) + "\">" + std::string(dirEntry->d_name) + "</a></p>\n";
+		files.push_back(std::string(dirEntry->d_name));
     }
+	size_t pos = dirName.find(this->conf.getPath());
+	if (pos != std::string::npos)
+		pos += this->conf.getPath().size();
+	else
+	 	pos = dirName.size();
+	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it) {
+		if (*it == "." || *it == "..")
+			page += "\t\t<p><a href=\"http://" + std::to_string(this->req.getConfig().getHost()) + ":" + std::to_string(this->req.getConfig().getPort()) + "/" + dirName.substr(pos) + "/" + *it + "\">" + *it + "</a></p>\n";
+	}
+	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it) {
+		if (*it != "." && *it != "..")
+			page += "\t\t<p><a href=\"http://" + std::to_string(this->req.getConfig().getHost()) + ":" + std::to_string(this->req.getConfig().getPort()) + "/" + dirName.substr(pos) + "/" + *it + "\">" + *it + "</a></p>\n";
+	}
     page +="\
     </p>\n\
     </body>\n\
@@ -330,7 +362,6 @@ void							Response::getErrorHtml() {
 		this->readFile();
 	}
 	catch (BaseException &e) {}
-	this->path = "/" + this->path;
 }
 
 kyoko::ConfigLocation				&Response::getConfig() {

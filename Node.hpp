@@ -67,13 +67,14 @@ namespace third {
 		void	start_node(std::string&);
 		void	start_node();
 		void	run_node();
+		void	clear();
 	private:
 		/*
 			Вспомогательные методы:
 				new_server(объект класса ConfigServer) - метод создающий новый объект класса Server и добавляющий его в _listen_servers
 		*/
 		void	new_server(kyoko::ConfigServer&);
-		void	poll_error(int&, struct pollfd*, std::map<long, int>&);
+		void	poll_error(std::map<long, struct pollfd>&);
 	};
 
 }
