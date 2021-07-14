@@ -148,7 +148,17 @@ void				CGI::workWithFork(pid_t pid, char **env, cmalt::Request &req) {
 		char * const * null = NULL;
 		dup2(this->fin, STDIN_FILENO);
 		dup2(this->fout, STDOUT_FILENO);
-		execve(req.getLocation().getCgiPath().c_str(), null, env);
+		if (req.getLocation().getType() == "php") {
+			char	*args[3] = {const_cast<char *>("/usr/local/bin/php"), const_cast<char *>((req.getLocation().getCgiPath()).c_str()), NULL};
+			execve(args[0], args, env);
+		}
+		else if (req.getLocation().getType() == "py") {
+			char	*arg[3] = {const_cast<char *>("/usr/local/bin/python3"), const_cast<char *>((req.getLocation().getCgiPath()).c_str()), NULL};
+			execve(arg[0], arg, env);
+		}
+		else {
+			execve(req.getLocation().getCgiPath().c_str(), null, env);
+		}
 	}
 	else {
 		char	buffer[TCP_SIZE];

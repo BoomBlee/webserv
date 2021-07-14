@@ -243,7 +243,6 @@ namespace mterresa {
 			}
 			pool = true;
 		}
-		std::cout << RED << "\nSTOP" << RESET <<RESET << std::endl;
 	}
 
 	void	Node::clear() {
