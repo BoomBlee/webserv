@@ -9,7 +9,7 @@
 
 
 //================================================================================
-namespace third {
+namespace mterresa {
 
 	typedef struct recv_param {
 		bool	_if_length;
@@ -39,7 +39,7 @@ namespace third {
 		std::map<long, std::string>	_read_buf;
 		std::map<long, cmalt::Response>	_response;
 		std::map<long, bool>	_request_is_full;
-		std::map<long, long>	_send_pos;
+		std::map<long, size_t>	_send_pos;
 		std::map<long, request_parameters>	_request_params;
 	public:
 		/*

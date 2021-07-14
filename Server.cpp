@@ -14,7 +14,7 @@
 #include <sys/socket.h>
 
 //================================================================================
-namespace third {
+namespace mterresa {
 
 	/*
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,7 @@ namespace third {
 
 	Server::Server() : _listen_socket(-1) {}
 
-	Server::Server(kyoko::ConfigServer& config) : _listen_socket(-1), _config(config) {
+	Server::Server(kyoko::ConfigServer& config) : _config(config), _listen_socket(-1) {
 		this->start_listening_host();
 	}
 
@@ -161,12 +161,18 @@ namespace third {
 			this->_listen_socket = socket(AF_INET, SOCK_STREAM, 0);
 			if (this->_listen_socket == -1)
 				throw cmalt::BaseException("Failed to create socket", 1);
+			fcntl(this->_listen_socket, F_SETFL, O_NONBLOCK);
 			int enable = 1;
 			if (setsockopt(this->_listen_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
 				throw cmalt::BaseException("Failed setsockopt(SO_REUSEADDR)", 9);
+			#ifndef SO_REUSPORT
+			# define SO_REUSPORT
+			if (setsockopt(this->_listen_socket, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0)
+				throw cmalt::BaseException("Failed setsockopt(SO_REUSEPORT)", 9);
+			#endif
 			if (bind(this->_listen_socket, reinterpret_cast<struct sockaddr *>(&this->_addr), static_cast<socklen_t>(sizeof(this->_addr))) == -1)
 				throw cmalt::BaseException("Failed to bind socket to " + std::to_string(this->_config.getHost()) + ":" + std::to_string(this->_config.getPort()), 2, this->_listen_socket);
-			if (listen(this->_listen_socket, 1000) == -1)
+			if (listen(this->_listen_socket, 4000) == -1)
 				throw cmalt::BaseException("Failed to listen socket to " + std::to_string(this->_config.getHost()) + ":" + std::to_string(this->_config.getPort()), 3, this->_listen_socket);
 		}
 	}
@@ -181,7 +187,7 @@ namespace third {
 		if (accept_socket == -1)
 			throw cmalt::BaseException("Failed to accept socket to " + std::to_string(this->_config.getHost()) + ":" + std::to_string(this->_config.getPort()), 4);
 		int enable = 1;
-		if (setsockopt(this->_listen_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+		if (setsockopt(accept_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
 			throw cmalt::BaseException("Failed setsockopt(SO_REUSEADDR)", 9);
 		fcntl(accept_socket, F_SETFL, O_NONBLOCK);
 		cmalt::Request	request;
@@ -204,7 +210,6 @@ namespace third {
 		Получение запроса
 	*/
 	void	Server::recv(long& accept_socket) {
-		struct timeval	start1, start2, end1, end2;
 		if (this->_request_is_full[accept_socket] == false) {
 			char	buf[TCP_SIZE];
 			errno = 0;
@@ -249,7 +254,6 @@ namespace third {
 					if (this->_request_params[accept_socket]._type == 1) {
 						if (this->_read_buf[accept_socket].find("0\r\n\r\n", this->_request_params[accept_socket]._pos) + 5 == this->_read_buf[accept_socket].size())
 							this->_request_is_full[accept_socket] = true;
-						// std::cout << this->_read_buf[accept_socket].size() << std::endl;
 						if (this->_read_buf[accept_socket].find_last_of("0") != std::string::npos)
 							this->_request_params[accept_socket]._pos = this->_read_buf[accept_socket].find_last_of("0");
 					}

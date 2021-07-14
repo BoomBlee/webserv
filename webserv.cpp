@@ -25,15 +25,15 @@ int		main(int numArgs, char **args) {
 		return 0;
 	try {
 		std::string	path = std::string(args[1]);
-		third::Node	node(path);
+		mterresa::Node	node(path);
 		node.start_node();
 		node.run_node();
 	}
 	catch (cmalt::BaseException &e) {
-		std::cerr << e.what() << std::endl;
+		std::cerr << RED  << e.what() <<RESET << std::endl;
 	}
 	catch (std::exception& e) {
-		std::cerr << RED << e.what() << RESET << std::endl;
+		std::cerr << RED  << RED << e.what() << RESET <<RESET << std::endl;
 	}
 	return 0;
 }

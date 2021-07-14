@@ -106,7 +106,7 @@ std::string			CGI::execCGI(cmalt::Request &req) {
 		this->mapToChar(&env);
 	}
 	catch (std::bad_alloc &e) {
-		std::cerr << e.what() << std::endl;
+		std::cerr << RED  << e.what() <<RESET << std::endl;
 	}
 	this->openTmpFile();
 	pid_t	pid = fork();

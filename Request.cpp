@@ -77,22 +77,10 @@ void																Request::parse(std::string &str) {
 		this->code = e.getErrorNumber();
 		this->status = std::string(e.what());
 	}
-	// std::cout << "Method: " << this->method << "|" << std::endl;
-	// std::cout << "Path: " << this->path << "|" << std::endl;
-	// std::cout << "FullPath: " << this->fullPath << "|" << std::endl;
-	// std::cout << "Query: " << this->query << "|" << std::endl;
-	// std::cout << "Version: " << this->version << "|" << std::endl;
-	// std::cout << "Status: " << this->status << "|" << this->code << "|" << std::endl;
-	// int	i = 0;
 	for (std::map<std::string, std::list<std::pair<std::string, double> > >::iterator it = this->headers.begin(); it != this->headers.end(); ++it) {
 		if (it->first == "Connection" && it->second.begin()->first == "close")
 			this->connect = false;
 	}
-	// i = 0;
-	// for (std::map<std::string, std::string>::iterator it = this->rzhanoiHleb.begin(); it != this->rzhanoiHleb.end(); ++it) {
-	// 	std::cout << "Secrets" << ++i << ": " << it->first << "=" << it->second << std::endl;
-	// }
-	// std::cout << "Body:\n|=====================================|\n" << this->body << "\n|==============================================|" << std::endl;
 }
 
 void									Request::getNewLine(std::string &str) {

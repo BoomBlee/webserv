@@ -5,11 +5,11 @@
 namespace cmalt {
 //================================================================================
 
-BaseException::BaseException() : std::exception(), message(std::string("BaseMessage")), numError(0) {}
+BaseException::BaseException() : std::exception(), numError(0), message(std::string("BaseMessage")) {}
 
-BaseException::BaseException(std::string message, int numError) : std::exception(), message(message), numError(numError) {}
+BaseException::BaseException(std::string message, int numError) : std::exception(), numError(numError), message(message) {}
 
-BaseException::BaseException(std::string message, int numError, long &sock) : std::exception(), message(message), numError(numError) {
+BaseException::BaseException(std::string message, int numError, long &sock) : std::exception(), numError(numError), message(message) {
 	close(sock);
 	sock = -1;
 }

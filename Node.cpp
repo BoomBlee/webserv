@@ -13,7 +13,7 @@
 extern bool work;
 
 //================================================================================
-namespace third {
+namespace mterresa {
 	/*
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		Конструкторы, Деструктор и перегрузка операторов
@@ -120,7 +120,7 @@ namespace third {
 				this->new_server(*iter);
 			}
 			catch (cmalt::BaseException &e) {
-				std::cerr << " " << e.what() << std::endl;
+				std::cerr << RED  << " " << e.what() <<RESET << std::endl;
 			}
 		}
 	}
@@ -132,22 +132,20 @@ namespace third {
 				this->new_server(*iter);
 			}
 			catch (cmalt::BaseException &e) {
-				std::cerr << " " << e.what() << std::endl;
+				std::cerr << RED  << " " << e.what() <<RESET << std::endl;
 			}
 		}
 	}
 
 	void	Node::run_node() {
 		std::map<long, struct pollfd>	all_fds;
-		struct	pollfd	poll_fds[this->_listen_servers.size() * 1001];
+		struct	pollfd	poll_fds[this->_listen_servers.size() * 4001];
 		int	count = 0;
 		for (std::map<long, Server>::iterator iter = this->_listen_servers.begin();iter != this->_listen_servers.end(); ++iter) {
 			all_fds[iter->first].fd = iter->first;
 			all_fds[iter->first].events = POLLIN;
 			++count;
 		}
-		struct timeval	start2, end2;
-		gettimeofday(&start2, NULL);
 		while (work) {
 			bool	pool = true;
 			while (pool) {
@@ -155,11 +153,12 @@ namespace third {
 				for (std::map<long, struct pollfd>::iterator iter = all_fds.begin(); iter != all_fds.end(); ++iter) {
 					poll_fds[count].fd = iter->second.fd;
 					poll_fds[count].events = iter->second.events;
-					// poll_fds[count].revents = iter->second.revents;//проверить на маке
 					poll_fds[count].revents = 0;
 					++count;
 				}
 				int ret = poll(poll_fds, all_fds.size(), 10000);
+				if (!work)
+					break;
 				if (ret < 0)
 					this->poll_error(all_fds);
 				if (ret > 0)
@@ -183,7 +182,7 @@ namespace third {
 					}
 					catch (cmalt::BaseException &e) {
 						if (e.getErrorNumber() == 0) {
-							std::cerr << e.what() << std::endl;
+							std::cerr << RED  << e.what() <<RESET << std::endl;
 							all_fds.erase(fd);
 							iter->second->erase(fd);
 							this->_recv_servers.erase(fd);
@@ -194,11 +193,6 @@ namespace third {
 						else {
 							this->_accept_servers[fd] = iter->second;
 							this->_recv_servers.erase(fd);
-							gettimeofday(&end2, NULL);
-							long long t1 = (end2.tv_sec * 1000 + end2.tv_usec / 1000) - (start2.tv_sec * 1000 + start2.tv_usec / 1000);
-							std::cout << CIAN << "Response-full:" << t1 / 1000 << " " << fd << RESET << std::endl;
-							std::cout << RED << "Time: " << t1 << "ms" << RESET << std::endl;
-							gettimeofday(&start2, NULL);
 						}
 					}
 					break;
@@ -213,13 +207,12 @@ namespace third {
 					try {
 						iter->second->recv(fd);
 						if (iter->second->get_request_is_full(fd)) {
-							std::cout << CIAN << "Request-full:" << fd << RESET << std::endl;
 							this->_recv_servers[iter->first] = iter->second;
 							iter->second->set_request_is_full(false, fd);
 						}
 					}
 					catch (cmalt::BaseException &e) {
-						std::cerr << e.what() << std::endl;
+						std::cerr << RED  << e.what() <<RESET << std::endl;
 						all_fds.erase(fd);
 						iter->second->erase(fd);
 						this->_accept_servers.erase(fd);
@@ -243,14 +236,14 @@ namespace third {
 						this->_accept_servers[fd] = &it->second;
 					}
 					catch (cmalt::BaseException &e) {
-						std::cerr << e.what() << std::endl;
+						std::cerr << RED  << e.what() <<RESET << std::endl;
 					}
 					break;
 				}
 			}
 			pool = true;
 		}
-		std::cout << RED << "STOP" << RESET << std::endl;
+		std::cout << RED << "\nSTOP" << RESET <<RESET << std::endl;
 	}
 
 	void	Node::clear() {
@@ -281,7 +274,7 @@ namespace third {
 	}
 
 	void	Node::poll_error(std::map<long, struct pollfd>& all_fds) {
-		std::cerr << "Poll error" << std::endl;
+		std::cerr << RED  << "Poll error" <<RESET << std::endl;
 		std::map<long, Server*>::iterator iter;
 		for (iter = this->_accept_servers.begin(); iter != this->_accept_servers.end(); ++iter) {
 			long	fd = iter->first;

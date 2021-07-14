@@ -312,7 +312,7 @@ std::string							Response::generateAutoindex(const char *path) {
     <p>\n";
 
     if (dir == NULL) {
-        std::cerr << RED << "Error: could not open [" << path << "]" << RESET << std::endl;
+        std::cerr << RED  << RED << "Error: could not open [" << path << "]" << RESET <<RESET << std::endl;
         return "";
     }
     if (dirName[0] != '/')
